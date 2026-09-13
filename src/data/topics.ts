@@ -1,0 +1,60 @@
+import { TopicItem } from '../types';
+
+export const TOPICS_WE_TEACH: TopicItem[] = [
+  {
+    id: 'banking',
+    title: 'Banking',
+    titleHi: 'बैंकिंग',
+    status: 'Ongoing',
+    category: 'Career & Finance',
+    description: 'Real-world banking operations, instrument clearances, digital KYC, compliance, and corporate finance interfaces.',
+  },
+  {
+    id: 'gst',
+    title: 'GST',
+    titleHi: 'जीएसटी',
+    status: 'Ongoing',
+    category: 'Taxation & Accounts',
+    description: 'Practical GST concepts taught along with live GST entries, return reconciliations, and Tally Prime workflows.',
+  },
+  {
+    id: 'accounting',
+    title: 'Accounting',
+    titleHi: 'अकाउंटिंग',
+    status: 'Ongoing',
+    category: 'Finance & Bookkeeping',
+    description: 'Practical accounting principles, ledger posting, voucher creation, and standard commercial book-keeping entries.',
+  },
+  {
+    id: 'poster-making',
+    title: 'Poster Making (AI)',
+    titleHi: 'पोस्टर मेकिंग (एआई)',
+    status: 'Completed',
+    category: 'Digital & Creative',
+    description: '7–8 session series on designing professional visual creatives with AI tools, including the "Edit & Upgrade Your Poster" project.',
+  },
+  {
+    id: 'yoga',
+    title: 'Yoga',
+    titleHi: 'योग व फिटनेस',
+    status: 'Ongoing',
+    category: 'Health & Wellness',
+    description: 'Physical asanas, mindful breath control, and daily vitality drills conducted for members\' physical stamina and focus.',
+  },
+  {
+    id: 'video-editing',
+    title: 'Video Editing',
+    titleHi: 'वीडियो एडिटिंग',
+    status: 'Coming Soon',
+    category: 'Digital & Creative',
+    description: 'Practical video-editing, timeline pacing, storytelling, and digital broadcast editing workflows for modern creators.',
+  },
+  {
+    id: 'basic-law',
+    title: 'Basic Practical Law',
+    titleHi: 'व्यावहारिक कानून',
+    status: 'Coming Soon',
+    category: 'Professional Ethics',
+    description: 'Essential legal rights, contract basics, commercial agreements, and compliance literacy every working citizen needs.',
+  },
+];

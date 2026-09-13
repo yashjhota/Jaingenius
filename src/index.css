@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cinzel", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-navy-950: #08121e;
+  --color-navy-900: #0c1b2a;
+  --color-navy-800: #13273d;
+  --color-navy-700: #1b3552;
+  --color-gold-400: #f3a628;
+  --color-gold-500: #e59a1e;
+  --color-gold-600: #c98212;
+  --color-cream-50: #faf8f5;
+  --color-cream-100: #f4eee3;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    color: #0c1b2a;
+    background-color: #faf8f5;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Infinite continuous scroll animations */
+@keyframes continuousScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-infinite-scroll {
+  display: flex;
+  width: max-content;
+  animation: continuousScroll 32s linear infinite;
+}
+
+.animate-infinite-scroll:hover {
+  animation-play-state: paused;
+}
+

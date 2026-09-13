@@ -1,0 +1,6 @@
+{
+  "name": "Jain Genius — The Change Makers",
+  "description": "Official public website for Jain Genius — The Change Makers, dedicated to the holistic development of youth through spiritual, financial, physical, and mental growth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
