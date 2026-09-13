@@ -1,0 +1,4 @@
+[build.environment]
+  # These variables contain public Google Form URLs that are intentionally
+  # embedded in the browser bundle. Keep scanning enabled for all other keys.
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_REGISTRATION_FORM_URL,VITE_REGISTRATION_FORM_URL"
