@@ -85,30 +85,30 @@ export const JourneySection: React.FC<JourneySectionProps> = ({
         </div>
 
         {/* Progressive Visual Timeline (Mobile/Tablet Pills) */}
-        <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
+        <div className="lg:hidden flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none touch-pan-x">
           {MEMBER_JOURNEY_STEPS.map((step, idx) => {
             const isActive = activeStepIndex === idx;
             return (
               <button
                 key={step.step}
                 onClick={() => setActiveStepIndex(idx)}
-                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
+                className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
                   isActive
                     ? 'bg-[#0C1B2A] text-white border-[#E59A1E]'
-                    : 'bg-slate-50 text-slate-700 border-slate-200'
+                    : 'bg-white text-slate-700 border-slate-200'
                 }`}
               >
-                <span className={`w-5 h-5 rounded-full text-[11px] flex items-center justify-center ${isActive ? 'bg-[#E59A1E] text-[#0C1B2A]' : 'bg-slate-200 text-slate-700'}`}>
+                <span className={`w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center ${isActive ? 'bg-[#E59A1E] text-[#0C1B2A]' : 'bg-slate-100 text-slate-700'}`}>
                   {step.step}
                 </span>
-                <span>{step.stage}</span>
+                <span className="whitespace-nowrap">{step.stage}</span>
               </button>
             );
           })}
         </div>
 
         {/* Active Stage Detail Canvas */}
-        <div className="bg-[#FAF8F5] border-2 border-[#E59A1E]/30 rounded-3xl p-6 sm:p-10 shadow-sm">
+        <div className="bg-[#FAF8F5] border-2 border-[#E59A1E]/30 rounded-3xl p-5 sm:p-8 lg:p-10 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-8 space-y-4">
               <div className="flex items-center gap-3">

@@ -3,6 +3,7 @@ import { useCMS } from '../../services/cmsStore';
 import { Language, PageId, NewsArticle } from '../../types';
 import { Newspaper, Search, Calendar, Clock, ArrowRight, Tag, X, Sparkles, Settings } from 'lucide-react';
 import { CTASection } from '../layout/CTASection';
+import { SocialFeedSection } from '../home/SocialFeedSection';
 
 interface NewsViewProps {
   lang: Language;
@@ -48,15 +49,15 @@ export const NewsView: React.FC<NewsViewProps> = ({ lang, onNavigate, onOpenRegi
       </section>
 
       {/* Filter and Search Bar */}
-      <section className="py-6 bg-white border-b border-slate-200 sticky top-[72px] z-20 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <section className="py-4 sm:py-6 bg-white border-b border-slate-200 sticky top-[60px] sm:top-[72px] z-20 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
           {/* Categories */}
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto w-full md:w-auto scrollbar-none touch-pan-x pb-1 md:pb-0">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-[#0C1B2A] text-white border-[#E59A1E]'
                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
@@ -202,6 +203,15 @@ export const NewsView: React.FC<NewsViewProps> = ({ lang, onNavigate, onOpenRegi
           </div>
         </div>
       )}
+
+      {/* Live Social Media Feed */}
+      <div className="border-t border-slate-200 bg-slate-50/50">
+        <SocialFeedSection
+          lang={lang}
+          onNavigate={onNavigate}
+          showHeaderAction={false}
+        />
+      </div>
 
       {/* Bottom CTA Band */}
       <CTASection lang={lang} onOpenRegister={onOpenRegister} />

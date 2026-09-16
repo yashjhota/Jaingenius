@@ -6,6 +6,7 @@ import { GalleryManager } from './GalleryManager';
 import { NewsManager } from './NewsManager';
 import { TestimonialsManager } from './TestimonialsManager';
 import { SiteSettingsManager } from './SiteSettingsManager';
+import { SocialFeedManager } from './SocialFeedManager';
 import { Logo } from '../common/Logo';
 import {
   ShieldCheck,
@@ -26,6 +27,7 @@ import {
   CheckCircle2,
   AlertCircle,
   FileCheck,
+  Share2,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -40,6 +42,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
     news,
     testimonials,
     settings,
+    socialPosts,
     logs,
     isAuthenticated,
     login,
@@ -49,7 +52,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'events' | 'gallery' | 'news' | 'testimonials' | 'settings'
+    'overview' | 'events' | 'gallery' | 'news' | 'social' | 'testimonials' | 'settings'
   >('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -109,7 +112,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
                     setPinInput(e.target.value);
                     if (pinError) setPinError(false);
                   }}
-                  placeholder="Enter PIN (e.g. 2026)"
+                  placeholder="Enter Admin PIN or Password"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#081320] border border-white/15 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#E59A1E] transition-colors"
                 />
               </div>
@@ -117,7 +120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
               {pinError && (
                 <div className="flex items-center gap-1.5 text-xs text-rose-400 mt-2">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                  <span>Incorrect PIN or credentials. Try PIN <strong>2026</strong>.</span>
+                  <span>Invalid credentials. Access restricted to authorized administrators.</span>
                 </div>
               )}
             </div>
@@ -129,17 +132,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
               Sign In to Admin Dashboard
             </button>
           </form>
-
-          {/* Quick Demo Helper Hint */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center space-y-1">
-            <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">
-              Default Access Credentials
-            </span>
-            <p className="text-[11px] text-slate-400">
-              Master PIN: <strong className="text-white">2026</strong> or Password:{' '}
-              <strong className="text-white">admin123</strong>
-            </p>
-          </div>
 
           <div className="pt-2 text-center">
             <button
@@ -264,6 +256,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
           </button>
 
           <button
+            onClick={() => setActiveTab('social')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-colors ${
+              activeTab === 'social'
+                ? 'bg-[#E59A1E] text-[#0C1B2A] font-bold shadow-xs'
+                : 'text-slate-300 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>Social Hub ({socialPosts.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('testimonials')}
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-colors ${
               activeTab === 'testimonials'
@@ -317,7 +321,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
             </div>
 
             {/* Quick Metrics Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
               <div
                 onClick={() => setActiveTab('events')}
                 className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs hover:border-[#E59A1E] cursor-pointer transition-all space-y-2 group"
@@ -375,6 +379,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
               </div>
 
               <div
+                onClick={() => setActiveTab('social')}
+                className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs hover:border-[#E59A1E] cursor-pointer transition-all space-y-2 group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Social Hub
+                  </span>
+                  <div className="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Share2 className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="text-3xl font-extrabold text-[#0C1B2A] font-display">
+                  {socialPosts.length}
+                </div>
+                <p className="text-[11px] text-slate-400">Live feeds & video embeds</p>
+              </div>
+
+              <div
                 onClick={() => setActiveTab('testimonials')}
                 className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs hover:border-[#E59A1E] cursor-pointer transition-all space-y-2 group"
               >
@@ -396,7 +418,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
             </div>
 
             {/* Quick Action Tiles */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <button
                 onClick={() => setActiveTab('events')}
                 className="p-5 rounded-3xl bg-gradient-to-br from-[#0C1B2A] to-[#162E4A] text-white text-left space-y-2 hover:shadow-lg transition-all group"
@@ -439,6 +461,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
                 </h4>
                 <p className="text-xs text-slate-300">
                   Announce admissions, career guidance, or philosophy updates.
+                </p>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('social')}
+                className="p-5 rounded-3xl bg-gradient-to-br from-[#0C1B2A] to-[#162E4A] text-white text-left space-y-2 hover:shadow-lg transition-all group"
+              >
+                <div className="w-8 h-8 rounded-xl bg-white/10 text-[#F5B738] flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Share2 className="w-4 h-4" />
+                </div>
+                <h4 className="text-sm font-bold font-display text-white">
+                  Live Social Post
+                </h4>
+                <p className="text-xs text-slate-300">
+                  Embed Instagram, YouTube, X, or Telegram community updates.
                 </p>
               </button>
 
@@ -523,7 +560,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
           <NewsManager onNavigate={onNavigate} showToast={showToast} />
         )}
 
-        {/* Tab 5: Testimonials */}
+        {/* Tab 5: Social Media Hub */}
+        {activeTab === 'social' && (
+          <SocialFeedManager onNavigate={onNavigate} showToast={showToast} />
+        )}
+
+        {/* Tab 6: Testimonials */}
         {activeTab === 'testimonials' && (
           <TestimonialsManager onNavigate={onNavigate} showToast={showToast} />
         )}

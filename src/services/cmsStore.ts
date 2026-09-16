@@ -6,12 +6,14 @@ import {
   TestimonialSlot,
   SiteSettings,
   AdminActivityLog,
+  SocialPost,
   PageId,
 } from '../types';
 import { EVENTS_DATA } from '../data/events';
 import { GALLERY_ITEMS } from '../data/gallery';
 import { TESTIMONIAL_SLOTS } from '../data/testimonials';
 import { SITE_CONFIG } from '../data/siteConfig';
+import { INITIAL_SOCIAL_POSTS } from '../data/socialPosts';
 
 // Initial News Articles seed
 export const INITIAL_NEWS_ARTICLES: NewsArticle[] = [
@@ -100,6 +102,7 @@ const STORAGE_KEYS = {
   NEWS: 'jg_cms_news',
   TESTIMONIALS: 'jg_cms_testimonials',
   SETTINGS: 'jg_cms_settings',
+  SOCIAL: 'jg_cms_social_posts',
   LOGS: 'jg_cms_activity_logs',
   AUTH: 'jg_cms_admin_auth',
 };
@@ -124,6 +127,7 @@ interface CMSState {
   news: NewsArticle[];
   testimonials: TestimonialSlot[];
   settings: SiteSettings;
+  socialPosts: SocialPost[];
   logs: AdminActivityLog[];
   isAuthenticated: boolean;
 }
@@ -154,6 +158,7 @@ let state: CMSState = {
   news: loadFromStorage<NewsArticle[]>(STORAGE_KEYS.NEWS, INITIAL_NEWS_ARTICLES),
   testimonials: loadFromStorage<TestimonialSlot[]>(STORAGE_KEYS.TESTIMONIALS, TESTIMONIAL_SLOTS),
   settings: loadFromStorage<SiteSettings>(STORAGE_KEYS.SETTINGS, INITIAL_SITE_SETTINGS),
+  socialPosts: loadFromStorage<SocialPost[]>(STORAGE_KEYS.SOCIAL, INITIAL_SOCIAL_POSTS),
   logs: loadFromStorage<AdminActivityLog[]>(STORAGE_KEYS.LOGS, [
     {
       id: 'log-init',
@@ -200,13 +205,14 @@ export const CMSStore = {
   // Auth
   login(pinOrPassword: string): boolean {
     const clean = pinOrPassword.trim();
-    // Default master PIN is 2026 or password admin123 (also accepts "jaingenius" or "gaurav")
+    const envPin = (import.meta.env.VITE_ADMIN_PIN || '2026').trim();
+    const envPassword = (import.meta.env.VITE_ADMIN_PASSWORD || 'Jaingenius2026').trim();
+
+    // Authenticate against env PIN or env password
     const valid =
-      clean === '2026' ||
-      clean === 'admin123' ||
-      clean === 'jaingenius' ||
-      clean === 'jaingenius2026' ||
-      clean === 'gaurav';
+      clean === envPin ||
+      clean === envPassword ||
+      clean.toLowerCase() === envPassword.toLowerCase();
 
     if (valid) {
       state = { ...state, isAuthenticated: true };
@@ -396,6 +402,78 @@ export const CMSStore = {
     notify();
   },
 
+  // --- SOCIAL MEDIA POSTS & LIVE FEEDS ---
+  addSocialPost(post: Omit<SocialPost, 'id' | 'createdAt'>): SocialPost {
+    const newPost: SocialPost = {
+      ...post,
+      id: 'sp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      isPublished: post.isPublished !== undefined ? post.isPublished : true,
+      createdAt: new Date().toISOString(),
+    };
+    state = {
+      ...state,
+      socialPosts: [newPost, ...state.socialPosts],
+    };
+    saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
+    logActivity('create', 'social', `Added ${post.platform} social post: "${post.caption.substring(0, 40)}..."`);
+    notify();
+    return newPost;
+  },
+
+  updateSocialPost(id: string, updates: Partial<SocialPost>): boolean {
+    const exists = state.socialPosts.some((p) => p.id === id);
+    if (!exists) return false;
+    state = {
+      ...state,
+      socialPosts: state.socialPosts.map((p) => (p.id === id ? { ...p, ...updates } : p)),
+    };
+    saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
+    logActivity('update', 'social', `Updated social post ID #${id}`);
+    notify();
+    return true;
+  },
+
+  deleteSocialPost(id: string): boolean {
+    const post = state.socialPosts.find((p) => p.id === id);
+    if (!post) return false;
+    state = {
+      ...state,
+      socialPosts: state.socialPosts.filter((p) => p.id !== id),
+    };
+    saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
+    logActivity('delete', 'social', `Deleted ${post.platform} post: "${post.caption.substring(0, 30)}..."`);
+    notify();
+    return true;
+  },
+
+  togglePinSocialPost(id: string): boolean {
+    const post = state.socialPosts.find((p) => p.id === id);
+    if (!post) return false;
+    const newPinned = !post.isPinned;
+    state = {
+      ...state,
+      socialPosts: state.socialPosts.map((p) => (p.id === id ? { ...p, isPinned: newPinned } : p)),
+    };
+    saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
+    logActivity('update', 'social', `${newPinned ? 'Pinned' : 'Unpinned'} social post ID #${id}`);
+    notify();
+    return true;
+  },
+
+  togglePublishSocialPost(id: string): boolean {
+    const post = state.socialPosts.find((p) => p.id === id);
+    if (!post) return false;
+    const newPub = !post.isPublished;
+    state = {
+      ...state,
+      socialPosts: state.socialPosts.map((p) => (p.id === id ? { ...p, isPublished: newPub } : p)),
+    };
+    saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
+    logActivity('update', 'social', `${newPub ? 'Published' : 'Hidden'} social post ID #${id}`);
+    notify();
+    return true;
+  },
+
   // --- BACKUP & RESTORE ---
   exportBackupJSON(): string {
     const backup = {
@@ -408,6 +486,7 @@ export const CMSStore = {
         news: state.news,
         testimonials: state.testimonials,
         settings: state.settings,
+        socialPosts: state.socialPosts,
       },
     };
     return JSON.stringify(backup, null, 2);
@@ -419,7 +498,7 @@ export const CMSStore = {
       if (!parsed.data) {
         throw new Error('Invalid backup format: Missing data field.');
       }
-      const { events, gallery, news, testimonials, settings } = parsed.data;
+      const { events, gallery, news, testimonials, settings, socialPosts } = parsed.data;
 
       if (events) {
         state.events = events;
@@ -441,6 +520,10 @@ export const CMSStore = {
         state.settings = settings;
         saveToStorage(STORAGE_KEYS.SETTINGS, settings);
       }
+      if (socialPosts) {
+        state.socialPosts = socialPosts;
+        saveToStorage(STORAGE_KEYS.SOCIAL, socialPosts);
+      }
 
       logActivity('import', 'system', 'Restored website data from uploaded JSON backup.');
       notify();
@@ -458,12 +541,14 @@ export const CMSStore = {
       news: INITIAL_NEWS_ARTICLES,
       testimonials: TESTIMONIAL_SLOTS,
       settings: INITIAL_SITE_SETTINGS,
+      socialPosts: INITIAL_SOCIAL_POSTS,
     };
     saveToStorage(STORAGE_KEYS.EVENTS, EVENTS_DATA);
     saveToStorage(STORAGE_KEYS.GALLERY, GALLERY_ITEMS);
     saveToStorage(STORAGE_KEYS.NEWS, INITIAL_NEWS_ARTICLES);
     saveToStorage(STORAGE_KEYS.TESTIMONIALS, TESTIMONIAL_SLOTS);
     saveToStorage(STORAGE_KEYS.SETTINGS, INITIAL_SITE_SETTINGS);
+    saveToStorage(STORAGE_KEYS.SOCIAL, INITIAL_SOCIAL_POSTS);
 
     logActivity('reset', 'system', 'Reset all public website collections to factory foundation seeds.');
     notify();
@@ -495,6 +580,11 @@ export function useCMS() {
     updateTestimonial: CMSStore.updateTestimonial,
     deleteTestimonial: CMSStore.deleteTestimonial,
     updateSiteSettings: CMSStore.updateSiteSettings,
+    addSocialPost: CMSStore.addSocialPost,
+    updateSocialPost: CMSStore.updateSocialPost,
+    deleteSocialPost: CMSStore.deleteSocialPost,
+    togglePinSocialPost: CMSStore.togglePinSocialPost,
+    togglePublishSocialPost: CMSStore.togglePublishSocialPost,
     exportBackupJSON: CMSStore.exportBackupJSON,
     importBackupJSON: CMSStore.importBackupJSON,
     resetToFactoryDefaults: CMSStore.resetToFactoryDefaults,

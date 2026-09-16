@@ -45,12 +45,12 @@ export const Logo: React.FC<LogoProps> = ({
         {/* Top Curved Text: . JAIN GENIUS . */}
         {/* Left & Right Dots: Gold (#F2A922) | Text: Cream (#FAF6F0) */}
         <text
-          font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-          font-size="14.5"
-          font-weight="800"
-          letter-spacing="0.22em"
+          fontFamily="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          fontSize="14.5"
+          fontWeight="800"
+          letterSpacing="0.22em"
         >
-          <textPath href="#logoTopArc" startOffset="50%" text-anchor="middle">
+          <textPath href="#logoTopArc" startOffset="50%" textAnchor="middle">
             <tspan fill="#F2A922">• </tspan>
             <tspan fill="#FAF6F0">JAIN GENIUS</tspan>
             <tspan fill="#F2A922"> •</tspan>
@@ -97,11 +97,11 @@ export const Logo: React.FC<LogoProps> = ({
         <text
           x="150"
           y="230"
-          text-anchor="middle"
-          font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-          font-weight="800"
-          font-size="35"
-          letter-spacing="0.05em"
+          textAnchor="middle"
+          fontFamily="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          fontWeight="800"
+          fontSize="35"
+          letterSpacing="0.05em"
         >
           <tspan fill="#FAF6F0">JAIN-</tspan><tspan fill="#F2A922">G</tspan>
         </text>
@@ -109,20 +109,20 @@ export const Logo: React.FC<LogoProps> = ({
         {/* Bottom Tagline: — THE CHANGE MAKERS — */}
         {/* Left/Right Dashes: Gold (#F2A922) | Text: Cream (#FAF6F0) */}
         <g id="brand-tagline">
-          <line x1="68" y1="246" x2="80" y2="246" stroke="#F2A922" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="68" y1="246" x2="80" y2="246" stroke="#F2A922" strokeWidth="2.5" strokeLinecap="round" />
           <text
             x="150"
             y="249.5"
-            text-anchor="middle"
+            textAnchor="middle"
             fill="#FAF6F0"
-            font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-            font-size="9.5"
-            font-weight="700"
-            letter-spacing="0.2em"
+            fontFamily="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+            fontSize="9.5"
+            fontWeight="700"
+            letterSpacing="0.2em"
           >
             THE CHANGE MAKERS
           </text>
-          <line x1="220" y1="246" x2="232" y2="246" stroke="#F2A922" stroke-width="2.5" stroke-linecap="round" />
+          <line x1="220" y1="246" x2="232" y2="246" stroke="#F2A922" strokeWidth="2.5" strokeLinecap="round" />
         </g>
       </svg>
     </div>

@@ -13,6 +13,7 @@ import { TopicsCarousel } from './components/home/TopicsCarousel';
 import { PravachanSpotlight } from './components/home/PravachanSpotlight';
 import { JourneySection } from './components/home/JourneySection';
 import { DacSection } from './components/home/DacSection';
+import { SocialFeedSection } from './components/home/SocialFeedSection';
 
 // Page Views
 import { AboutView } from './components/about/AboutView';
@@ -118,6 +119,11 @@ export default function App() {
               lang={lang}
               onNavigate={handleNavigate}
               onOpenRegister={() => handleOpenRegister()}
+            />
+
+            <SocialFeedSection
+              lang={lang}
+              onNavigate={handleNavigate}
             />
 
             <CTASection

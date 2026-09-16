@@ -15,6 +15,13 @@ export const SITE_CONFIG = {
     whatsappGroupText: 'Jain G WhatsApp Group',
     whatsappGroupUrl: 'https://chat.whatsapp.com/invite/jaingenius-tcm',
   },
+  social: {
+    instagram: 'https://www.instagram.com/yashjhota',
+    youtube: 'https://www.youtube.com/@jaingenius',
+    whatsappCommunity: 'https://chat.whatsapp.com/invite/jaingenius-tcm',
+    telegram: 'https://t.me/jaingeniusorg',
+    twitter: 'https://x.com/jaingeniustcm',
+  },
   memberPortalUrl: 'https://jaingeniusorg.lovable.app/',
   membershipDeposit: '₹1,000',
   membershipDepositNote: 'Refundable / Security Deposit towards learning resources & materials',

@@ -4,6 +4,7 @@ import { SITE_CONFIG } from '../../data/siteConfig';
 import { Language, PageId } from '../../types';
 import { TRANSLATIONS } from '../../data/i18n';
 import { Sparkles, ArrowRight, UserCheck, ExternalLink, ShieldCheck, Compass, CheckCircle2 } from 'lucide-react';
+import { useCMS } from '../../services/cmsStore';
 
 interface HeroProps {
   lang: Language;
@@ -13,6 +14,8 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) => {
   const t = TRANSLATIONS[lang];
+  const { settings } = useCMS();
+  const traineesCount = settings.activeTraineesCount || SITE_CONFIG.currentTraineesCount;
 
   return (
     <section className="relative pt-12 pb-20 md:pt-16 md:pb-28 bg-[#0C1B2A] text-[#FAF8F5] overflow-hidden">
@@ -125,7 +128,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
           <div className="lg:col-span-5 flex justify-center">
             <div className="relative w-full max-w-md">
               {/* Outer Radiant Shield Card */}
-              <div className="relative rounded-3xl bg-gradient-to-b from-[#112438] via-[#0E1F30] to-[#081320] border-2 border-[#E59A1E]/40 p-8 sm:p-10 shadow-2xl overflow-hidden flex flex-col items-center text-center">
+              <div className="relative rounded-3xl bg-gradient-to-b from-[#112438] via-[#0E1F30] to-[#081320] border-2 border-[#E59A1E]/40 p-5 sm:p-8 lg:p-10 shadow-2xl overflow-hidden flex flex-col items-center text-center">
                 {/* Spiritual Star Accents */}
                 <div className="absolute top-4 right-4 text-[#E59A1E]/40">✦</div>
                 <div className="absolute bottom-4 left-4 text-[#E59A1E]/40">✦</div>
@@ -136,7 +139,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
                 </div>
 
                 {/* Cultural Mission Box */}
-                <div className="mt-8 pt-6 border-t border-white/10 w-full text-left space-y-2.5">
+                <div className="mt-6 sm:mt-8 pt-6 border-t border-white/10 w-full text-left space-y-2.5">
                   <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#F3A628]">
                     <span>Initiative Framework</span>
                     <span>Age 15–30</span>
@@ -147,10 +150,10 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
                     spiritual anchors, practical economic competence, physical stamina, and mental clarity.
                   </p>
 
-                  <div className="pt-2 flex items-center justify-between text-xs text-slate-400">
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                     <span className="flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#E59A1E]" />
-                      24 Active Trainees
+                      {traineesCount} Active Trainees
                     </span>
                     <span className="flex items-center gap-1">
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#E59A1E]" />

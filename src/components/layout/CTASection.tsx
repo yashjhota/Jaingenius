@@ -3,6 +3,7 @@ import { Language } from '../../types';
 import { SITE_CONFIG } from '../../data/siteConfig';
 import { TRANSLATIONS } from '../../data/i18n';
 import { Phone, MessageCircle, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useCMS } from '../../services/cmsStore';
 
 interface CTASectionProps {
   lang: Language;
@@ -16,11 +17,13 @@ export const CTASection: React.FC<CTASectionProps> = ({
   className = '',
 }) => {
   const t = TRANSLATIONS[lang];
+  const { settings } = useCMS();
+  const traineesCount = settings.activeTraineesCount || SITE_CONFIG.currentTraineesCount;
 
   return (
-    <section className={`py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden ${className}`}>
+    <section className={`py-12 sm:py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden ${className}`}>
       <div className="max-w-6xl mx-auto">
-        <div className="relative rounded-3xl bg-gradient-to-br from-[#0C1B2A] via-[#112438] to-[#0A1624] border-2 border-[#E59A1E]/40 p-8 sm:p-12 lg:p-16 shadow-2xl overflow-hidden">
+        <div className="relative rounded-3xl bg-gradient-to-br from-[#0C1B2A] via-[#112438] to-[#0A1624] border-2 border-[#E59A1E]/40 p-6 sm:p-10 lg:p-16 shadow-2xl overflow-hidden">
           {/* Subtle gold decorative background accents */}
           <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-[#E59A1E]/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 -mb-8 -ml-8 w-64 h-64 bg-[#F5B738]/10 rounded-full blur-3xl pointer-events-none" />
@@ -33,21 +36,21 @@ export const CTASection: React.FC<CTASectionProps> = ({
                 <span>Refine to Superfine • Age 15–30</span>
               </div>
 
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#FAF8F5] tracking-tight font-display">
+              <h2 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-[#FAF8F5] tracking-tight font-display">
                 {t.wantToUpgrade}
               </h2>
 
-              <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
+              <p className="text-slate-300 text-sm sm:text-base lg:text-lg leading-relaxed">
                 {t.wantToUpgradeSub}
               </p>
 
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs text-slate-300 pt-1">
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 text-xs text-slate-300 pt-1">
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-[#E59A1E]" />
                   <span>Membership Deposit: {SITE_CONFIG.membershipDeposit}</span>
                 </div>
                 <span>•</span>
-                <span>{SITE_CONFIG.currentTraineesCount} Members Undergoing Active Training</span>
+                <span>{traineesCount} Members Undergoing Active Training</span>
               </div>
             </div>
 

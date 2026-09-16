@@ -184,11 +184,37 @@ export interface SiteSettings {
   initiativeOf: string;
 }
 
+export type SocialPlatform =
+  | 'instagram'
+  | 'youtube'
+  | 'twitter'
+  | 'linkedin'
+  | 'facebook'
+  | 'telegram'
+  | 'whatsapp';
+
+export interface SocialPost {
+  id: string;
+  platform: SocialPlatform;
+  postUrl: string;
+  caption: string;
+  authorName: string;
+  authorHandle?: string;
+  date: string;
+  imageUrl?: string;
+  videoEmbedUrl?: string;
+  likesOrEngagement?: string;
+  tags?: string[];
+  isPinned?: boolean;
+  isPublished?: boolean;
+  createdAt?: string;
+}
+
 export interface AdminActivityLog {
   id: string;
   timestamp: string;
   action: 'create' | 'update' | 'delete' | 'reset' | 'import' | 'auth';
-  module: 'events' | 'gallery' | 'news' | 'testimonials' | 'settings' | 'system';
+  module: 'events' | 'gallery' | 'news' | 'testimonials' | 'settings' | 'social' | 'system';
   description: string;
 }
 

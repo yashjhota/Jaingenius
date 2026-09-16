@@ -22,9 +22,9 @@ export const LiveMetrics: React.FC<LiveMetricsProps> = ({ lang }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
           {/* Highlighted Primary Metric Banner */}
-          <div className="w-full lg:w-7/12 bg-gradient-to-r from-[#112438] to-[#162E4A] border-2 border-[#E59A1E]/50 rounded-2xl p-6 sm:p-7 flex flex-col sm:flex-row items-center sm:items-start gap-6 shadow-xl">
-            <div className="w-16 h-16 rounded-2xl bg-[#E59A1E]/20 border border-[#E59A1E] flex items-center justify-center shrink-0 text-[#F3A628]">
-              <Users className="w-8 h-8" />
+          <div className="w-full lg:w-7/12 bg-gradient-to-r from-[#112438] to-[#162E4A] border-2 border-[#E59A1E]/50 rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 shadow-xl">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#E59A1E]/20 border border-[#E59A1E] flex items-center justify-center shrink-0 text-[#F3A628]">
+              <Users className="w-7 h-7 sm:w-8 sm:h-8" />
             </div>
 
             <div className="space-y-1.5 text-center sm:text-left">
@@ -48,9 +48,9 @@ export const LiveMetrics: React.FC<LiveMetricsProps> = ({ lang }) => {
           </div>
 
           {/* Secondary Verified Stats */}
-          <div className="w-full lg:w-5/12 grid grid-cols-2 gap-4">
+          <div className="w-full lg:w-5/12 grid grid-cols-2 gap-3 sm:gap-4">
             {/* Programmes Run */}
-            <div className="bg-[#081320] border border-white/10 hover:border-[#E59A1E]/40 rounded-2xl p-5 text-center transition-colors">
+            <div className="bg-[#081320] border border-white/10 hover:border-[#E59A1E]/40 rounded-2xl p-3.5 sm:p-5 text-center transition-colors">
               <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-2 text-[#E59A1E]">
                 <GraduationCap className="w-5 h-5" />
               </div>
@@ -66,7 +66,7 @@ export const LiveMetrics: React.FC<LiveMetricsProps> = ({ lang }) => {
             </div>
 
             {/* Events Held */}
-            <div className="bg-[#081320] border border-white/10 hover:border-[#E59A1E]/40 rounded-2xl p-5 text-center transition-colors">
+            <div className="bg-[#081320] border border-white/10 hover:border-[#E59A1E]/40 rounded-2xl p-3.5 sm:p-5 text-center transition-colors">
               <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-2 text-[#E59A1E]">
                 <Calendar className="w-5 h-5" />
               </div>

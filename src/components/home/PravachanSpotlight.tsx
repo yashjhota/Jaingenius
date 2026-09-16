@@ -78,7 +78,7 @@ export const PravachanSpotlight: React.FC<PravachanSpotlightProps> = ({ lang }) 
         </div>
 
         {/* Flagship Player Showcase Card */}
-        <div className="rounded-3xl bg-[#0F2238] border-2 border-[#E59A1E]/40 shadow-2xl p-6 sm:p-10 lg:p-12 mb-12 relative">
+        <div className="rounded-3xl bg-[#0F2238] border-2 border-[#E59A1E]/40 shadow-2xl p-5 sm:p-8 lg:p-12 mb-12 relative">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Left Col: Details & Takeaways (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
@@ -106,7 +106,7 @@ export const PravachanSpotlight: React.FC<PravachanSpotlightProps> = ({ lang }) 
               </div>
 
               {/* Core takeaways excerpt */}
-              <div className="bg-[#081320] border border-white/10 rounded-2xl p-5 space-y-2.5">
+              <div className="bg-[#081320] border border-white/10 rounded-2xl p-4 sm:p-5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-[#F3A628] uppercase tracking-wider flex items-center gap-1.5">
                     <Bookmark className="w-3.5 h-3.5" />
@@ -132,10 +132,10 @@ export const PravachanSpotlight: React.FC<PravachanSpotlightProps> = ({ lang }) 
               </div>
 
               {/* Action Bar */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                 <button
                   onClick={() => setShowSummaryModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-[#FAF8F5] flex items-center gap-2 transition-all"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-[#FAF8F5] flex items-center justify-center gap-2 transition-all"
                 >
                   <FileText className="w-4 h-4 text-[#F3A628]" />
                   <span>View Pravachan Summary</span>
@@ -145,9 +145,9 @@ export const PravachanSpotlight: React.FC<PravachanSpotlightProps> = ({ lang }) 
                   href={SITE_CONFIG.memberPortalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-5 py-2.5 rounded-xl bg-[#162E4A] hover:bg-[#1E3B5C] border border-[#E59A1E]/30 text-xs font-bold text-[#FAF8F5] flex items-center gap-2 transition-all"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#162E4A] hover:bg-[#1E3B5C] border border-[#E59A1E]/30 text-xs font-bold text-[#FAF8F5] flex items-center justify-center gap-2 transition-all"
                 >
-                  <span>Search Archive in Member Portal</span>
+                  <span>Search Archive in Portal</span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                 </a>
               </div>

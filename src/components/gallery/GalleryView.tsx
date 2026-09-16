@@ -43,9 +43,9 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ lang, onNavigate, onOp
       </section>
 
       {/* Filter Tabs */}
-      <section className="py-6 bg-white border-b border-slate-200 sticky top-[72px] z-20 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 overflow-x-auto">
+      <section className="py-4 sm:py-6 bg-white border-b border-slate-200 sticky top-[60px] sm:top-[72px] z-20 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto w-full sm:w-auto scrollbar-none touch-pan-x pb-1 sm:pb-0">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2 hidden sm:inline">
               Category:
             </span>
@@ -53,7 +53,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ lang, onNavigate, onOp
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
                   selectedCategory === cat
                     ? 'bg-[#0C1B2A] text-white border-[#E59A1E]'
                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
@@ -64,13 +64,15 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ lang, onNavigate, onOp
             ))}
           </div>
 
-          <button
-            onClick={() => onNavigate('admin')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[#B8780E] text-xs font-semibold shrink-0 transition-colors"
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Upload Photo</span>
-          </button>
+          <div className="flex justify-end sm:justify-auto">
+            <button
+              onClick={() => onNavigate('admin')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[#B8780E] text-xs font-semibold shrink-0 transition-colors"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Upload Photo</span>
+            </button>
+          </div>
         </div>
       </section>
 

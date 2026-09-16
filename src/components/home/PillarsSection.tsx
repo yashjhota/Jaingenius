@@ -85,18 +85,18 @@ export const PillarsSection: React.FC<PillarsSectionProps> = ({ lang, onNavigate
           </div>
 
           {/* Right: Detailed Editorial Canvas (7 cols) */}
-          <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-10 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[440px]">
+          <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-8 lg:p-10 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[360px] sm:min-h-[440px]">
             {/* Soft decorative accent */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-[#E59A1E]/5 rounded-full blur-2xl pointer-events-none" />
 
             <div className="space-y-6 relative z-10">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#0C1B2A] text-[#F3A628] flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-[#0C1B2A] text-[#F3A628] flex items-center justify-center shrink-0">
                     {iconMap[activePillar.icon]}
                   </div>
                   <div>
-                    <h4 className="text-2xl font-bold text-[#0C1B2A] font-display">
+                    <h4 className="text-xl sm:text-2xl font-bold text-[#0C1B2A] font-display">
                       {lang === 'en' ? activePillar.titleEn : activePillar.titleHi}
                     </h4>
                     <span className="text-xs font-semibold text-[#B8780E]">
@@ -132,7 +132,7 @@ export const PillarsSection: React.FC<PillarsSectionProps> = ({ lang, onNavigate
             </div>
 
             {/* Read more & What We Do Navigation link */}
-            <div className="pt-8 border-t border-slate-100 flex items-center justify-between mt-6">
+            <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-6">
               <span className="text-xs text-slate-500 font-medium">
                 Integrated into the Daily Activity Card (DAC) system
               </span>

@@ -47,9 +47,9 @@ export const EventsView: React.FC<EventsViewProps> = ({
       </section>
 
       {/* Filter Tabs */}
-      <section className="py-6 bg-white border-b border-slate-200 sticky top-[72px] z-20 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+      <section className="py-4 sm:py-6 bg-white border-b border-slate-200 sticky top-[60px] sm:top-[72px] z-20 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto w-full sm:w-auto scrollbar-none touch-pan-x pb-1 sm:pb-0">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline mr-2">
               Status:
             </span>
@@ -57,7 +57,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
               <button
                 key={mode}
                 onClick={() => setFilter(mode)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all border ${
+                className={`px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold capitalize transition-all border shrink-0 ${
                   filter === mode
                     ? 'bg-[#0C1B2A] text-white border-[#E59A1E]'
                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-slate-300'
@@ -68,7 +68,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
             <div className="text-xs text-slate-500 font-medium hidden md:block">
               Standard Venue: Pathshala Hall, Chickpet Jain Temple
             </div>

@@ -107,25 +107,25 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="registration-modal-title"
-      className="fixed inset-0 z-50 overflow-y-auto bg-[#081320]/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 overflow-y-auto bg-[#081320]/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4 md:p-6"
     >
-      <div className="relative w-full max-w-2xl bg-[#0C1B2A] border border-[#E59A1E]/40 rounded-3xl shadow-2xl overflow-hidden text-slate-200 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl bg-[#0C1B2A] border border-[#E59A1E]/40 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden text-slate-200 animate-in fade-in zoom-in-95 duration-200 my-auto">
         {/* Top Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#081320]">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-white/10 bg-[#081320]">
           <div className="flex items-center gap-3">
             <Logo size="sm" />
             <div>
-              <h3 id="registration-modal-title" className="text-lg font-bold text-[#FAF8F5] font-display">
+              <h3 id="registration-modal-title" className="text-base sm:text-lg font-bold text-[#FAF8F5] font-display">
                 {lang === 'en' ? 'Membership Registration' : 'सदस्यता पंजीकरण'}
               </h3>
-              <p className="text-xs text-[#E59A1E] font-medium">
+              <p className="text-[11px] sm:text-xs text-[#E59A1E] font-medium">
                 {SITE_CONFIG.name} — {SITE_CONFIG.tagline} • Age 15–30
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Close registration dialog"
           >
             <X className="w-5 h-5" />
@@ -133,7 +133,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 sm:p-8 max-h-[78vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 md:p-8 max-h-[82vh] sm:max-h-[78vh] overflow-y-auto">
           {submitted ? (
             <div className="py-8 text-center space-y-6">
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center mx-auto text-emerald-400">

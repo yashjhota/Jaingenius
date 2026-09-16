@@ -108,12 +108,12 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Jain Genius Home"
           >
             <Logo size="md" />
-            <div className="hidden sm:flex flex-col">
-              <span className="font-bold text-[#FAF8F5] text-base font-display leading-tight tracking-wide">
+            <div className="flex flex-col">
+              <span className="font-bold text-[#FAF8F5] text-sm sm:text-base font-display leading-tight tracking-wide">
                 Jain Genius
               </span>
-              <span className="text-[10px] text-[#FAF8F5]/85 font-semibold tracking-wider uppercase">
-                <span className="text-[#F2A922] mr-1">—</span>The Change Makers<span className="text-[#F2A922] ml-1">—</span>
+              <span className="text-[9px] sm:text-[10px] text-[#FAF8F5]/85 font-semibold tracking-wider uppercase hidden min-[380px]:block">
+                <span className="text-[#F2A922] mr-0.5 sm:mr-1">—</span>The Change Makers<span className="text-[#F2A922] ml-0.5 sm:ml-1">—</span>
               </span>
             </div>
           </button>
@@ -195,11 +195,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Mobile Right Controls */}
-          <div className="flex lg:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
             {/* Quick Lang Switch on mobile */}
             <button
               onClick={onToggleLang}
-              className="px-2 py-1 rounded text-xs font-bold text-[#F3A628] border border-white/20"
+              className="px-2 py-1 rounded text-xs font-bold text-[#F3A628] border border-white/20 hover:bg-white/5 transition-colors"
               aria-label="Toggle Language"
             >
               {lang === 'en' ? 'हिं' : 'EN'}
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
               href={SITE_CONFIG.memberPortalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded text-xs font-semibold text-white bg-[#162B42] border border-[#E59A1E]/40 flex items-center gap-1"
+              className="px-2.5 py-1 rounded text-xs font-semibold text-white bg-[#162B42] hover:bg-[#1E3958] border border-[#E59A1E]/40 flex items-center gap-1 transition-colors"
               title="Member Login"
             >
               <span>Login</span>
@@ -220,7 +220,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-md text-slate-200 hover:text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E59A1E]"
+              className="p-1.5 sm:p-2 rounded-md text-slate-200 hover:text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E59A1E]"
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}
             >
@@ -296,7 +296,7 @@ export const Header: React.FC<HeaderProps> = ({
                   Unlocked
                 </span>
               ) : (
-                <span className="text-xs text-slate-400 font-mono">PIN: 2026</span>
+                <Lock className="w-3.5 h-3.5 text-slate-400" />
               )}
             </button>
           </div>
@@ -322,9 +322,10 @@ export const Header: React.FC<HeaderProps> = ({
               rel="noopener noreferrer"
               className="w-full py-2.5 px-4 rounded-xl text-center text-sm font-semibold text-white bg-[#162B42] border border-[#E59A1E]/50 flex items-center justify-center gap-2"
             >
-              <UserCheck className="w-4 h-4 text-[#F3A628]" />
-              <span>{t.memberLogin} (jaingeniusorg.lovable.app)</span>
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+              <UserCheck className="w-4 h-4 text-[#F3A628] shrink-0" />
+              <span className="truncate">{t.memberLogin}</span>
+              <span className="text-xs text-[#F3A628] font-mono hidden min-[360px]:inline">(Task Tracker)</span>
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </a>
 
             {/* Helpline info */}

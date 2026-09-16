@@ -98,14 +98,14 @@ export const DacSection: React.FC<DacSectionProps> = ({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-[#F3A628] hover:underline pt-3"
             >
-              <span>Launch Deployed Tracker (jaingeniusorg.lovable.app)</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Launch Deployed Tracker <span className="hidden sm:inline">(jaingeniusorg.lovable.app)</span></span>
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
             </a>
           </div>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none touch-pan-x">
           {categories.map((cat) => (
             <button
               key={cat}
