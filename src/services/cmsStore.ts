@@ -1,5 +1,16 @@
 import { useState, useEffect, useSyncExternalStore } from 'react';
 import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  writeBatch,
+} from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from './firebase';
+import {
   EventItem,
   GalleryItem,
   NewsArticle,
@@ -24,13 +35,14 @@ export const INITIAL_NEWS_ARTICLES: NewsArticle[] = [
     date: '28 Aug 2026',
     readTime: '4 min read',
     author: 'Jain Genius Research Desk',
-    excerpt: 'The biological and spiritual mechanics behind the first rule of the Daily Activity Card (DAC), and why the Brahma Muhurta sets your focus apart.',
+    excerpt:
+      'The biological and spiritual mechanics behind the first rule of the Daily Activity Card (DAC), and why the Brahma Muhurta sets your focus apart.',
     fullBody: [
       'In our contemporary 24/7 hyperconnected world, sleep hygiene has deteriorated dramatically. Most youth find their focus scattered, cognitive stamina depleted, and nervous systems perpetually stimulated by late-night phone screens.',
       'Under the guidance of Sahebji, Rule 01 of the Jain Genius Daily Activity Card requires rising by 5:45 AM. Awakening at dawn aligns our internal circadian rhythms with the quietest hour of the day.',
       'When you wake at 5:45 AM, you experience the tranquility required for sacred Chaityavandan, deep contemplation, and physical yoga before the external world begins making demands on your attention.',
-      'Members report a 60% reduction in morning anxiety within just 14 consecutive days of maintaining this dawn discipline.'
-    ]
+      'Members report a 60% reduction in morning anxiety within just 14 consecutive days of maintaining this dawn discipline.',
+    ],
   },
   {
     id: 'art-2',
@@ -39,12 +51,13 @@ export const INITIAL_NEWS_ARTICLES: NewsArticle[] = [
     date: '20 Aug 2026',
     readTime: '5 min read',
     author: 'Commerce Mentorship Cell',
-    excerpt: 'How our 60-session Account Executive track trains young students to become indispensable financial professionals in top trading and corporate houses.',
+    excerpt:
+      'How our 60-session Account Executive track trains young students to become indispensable financial professionals in top trading and corporate houses.',
     fullBody: [
       'Integrity in commerce is one of the highest expressions of Jain values. Asteya (non-stealing and strict honesty) is not merely a spiritual vow; in the corporate arena, it represents immaculate financial discipline.',
       'Our 60-session Account Executive specialization takes students through real vouchers, GST filings, reconciliation tables, and TDS calculations.',
-      'Unlike theoretical college degrees, our trainees work on simulated audits under senior chartered accountants and business owners, graduating with tangible, job-ready competence.'
-    ]
+      'Unlike theoretical college degrees, our trainees work on simulated audits under senior chartered accountants and business owners, graduating with tangible, job-ready competence.',
+    ],
   },
   {
     id: 'art-3',
@@ -53,12 +66,13 @@ export const INITIAL_NEWS_ARTICLES: NewsArticle[] = [
     date: '12 Aug 2026',
     readTime: '3 min read',
     author: 'Career Counselling Wing',
-    excerpt: '24 young members completed their Gardner Multiple Intelligences Assessment, discovering their innate strengths in analytical, interpersonal, and creative spheres.',
+    excerpt:
+      '24 young members completed their Gardner Multiple Intelligences Assessment, discovering their innate strengths in analytical, interpersonal, and creative spheres.',
     fullBody: [
       'Every human mind possesses distinct cognitive strengths. Rather than forcing every student down the exact same path, Jain Genius administers Gardner’s Multiple Intelligences Test as Step 03 of the Member Journey.',
       'The 24 active trainees in our first Bangalore cohort uncovered whether their dominant profiles pointed toward analytical accounting, strategic sales, digital content design, or administrative operations.',
-      'Following the assessment, individual 1-on-1 counseling mapped each member to their optimal career track with 100% mutual alignment.'
-    ]
+      'Following the assessment, individual 1-on-1 counseling mapped each member to their optimal career track with 100% mutual alignment.',
+    ],
   },
   {
     id: 'art-4',
@@ -67,13 +81,14 @@ export const INITIAL_NEWS_ARTICLES: NewsArticle[] = [
     date: '05 Aug 2026',
     readTime: '2 min read',
     author: 'Events Directorate',
-    excerpt: 'An open, compassionate, and solution-driven gathering addressing the modern epidemic of anxiety and emotional isolation among youth aged 15–30.',
+    excerpt:
+      'An open, compassionate, and solution-driven gathering addressing the modern epidemic of anxiety and emotional isolation among youth aged 15–30.',
     fullBody: [
       'Mental health is Pillar 04 of our holistic framework. On 30 August 2026 at 2:15 PM, Pathshala Hall, Chickpet Jain Temple will host this vital discussion.',
       'The assembly will combine clinical psychological insights with the spiritual anchoring of Jain contemplation, guiding youth toward self-compassion, resilience, and actionable coping frameworks.',
-      'Admission is completely free for all youth aged 15 to 30. Early registration is recommended to guarantee hall seating.'
-    ]
-  }
+      'Admission is completely free for all youth aged 15 to 30. Early registration is recommended to guarantee hall seating.',
+    ],
+  },
 ];
 
 export const INITIAL_SITE_SETTINGS: SiteSettings = {
@@ -95,7 +110,7 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
   initiativeOf: SITE_CONFIG.initiativeOf,
 };
 
-// Storage keys
+// Storage keys for local caching & offline support
 const STORAGE_KEYS = {
   EVENTS: 'jg_cms_events',
   GALLERY: 'jg_cms_gallery',
@@ -116,12 +131,14 @@ function notify() {
   try {
     window.dispatchEvent(new CustomEvent('jg_cms_update'));
   } catch {
-    // window might not exist in rare cases
+    // window might not exist in non-browser context
   }
 }
 
-// Memory cache to avoid repeated JSON parsing
-interface CMSState {
+export type FirebaseSyncStatus = 'connected' | 'syncing' | 'offline' | 'error';
+
+// Reactive CMS State
+export interface CMSState {
   events: EventItem[];
   gallery: GalleryItem[];
   news: NewsArticle[];
@@ -130,6 +147,8 @@ interface CMSState {
   socialPosts: SocialPost[];
   logs: AdminActivityLog[];
   isAuthenticated: boolean;
+  firebaseSyncStatus: FirebaseSyncStatus;
+  lastSyncedAt: string | null;
 }
 
 function loadFromStorage<T>(key: string, fallback: T): T {
@@ -151,7 +170,7 @@ function saveToStorage<T>(key: string, value: T): void {
   }
 }
 
-// Initial in-memory state
+// Initial state hydrated from local storage / static seed
 let state: CMSState = {
   events: loadFromStorage<EventItem[]>(STORAGE_KEYS.EVENTS, EVENTS_DATA),
   gallery: loadFromStorage<GalleryItem[]>(STORAGE_KEYS.GALLERY, GALLERY_ITEMS),
@@ -165,10 +184,12 @@ let state: CMSState = {
       timestamp: new Date().toISOString(),
       action: 'create',
       module: 'system',
-      description: 'CMS Database initialized with curated foundation data.',
+      description: 'Connected to Firebase Firestore with real-time sync.',
     },
   ]),
   isAuthenticated: loadFromStorage<boolean>(STORAGE_KEYS.AUTH, false),
+  firebaseSyncStatus: 'syncing',
+  lastSyncedAt: null,
 };
 
 function logActivity(
@@ -185,14 +206,261 @@ function logActivity(
   };
   state = {
     ...state,
-    logs: [newLog, ...state.logs].slice(0, 100), // keep latest 100
+    logs: [newLog, ...state.logs].slice(0, 100),
   };
   saveToStorage(STORAGE_KEYS.LOGS, state.logs);
+
+  // Asynchronously record log in Firestore
+  try {
+    setDoc(doc(db, 'activityLogs', newLog.id), newLog).catch(() => {});
+  } catch {
+    // Non-blocking for logs
+  }
 }
 
-// CMS Actions
+// ==========================================
+// FIRESTORE REAL-TIME SYNCHRONIZATION ENGINE
+// ==========================================
+let hasInitializedFirestoreListeners = false;
+
+function initFirestoreSync() {
+  if (hasInitializedFirestoreListeners) return;
+  hasInitializedFirestoreListeners = true;
+
+  try {
+    // 1. Events Listener
+    const eventsPath = 'events';
+    onSnapshot(
+      collection(db, eventsPath),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          // Auto-seed initial events if collection is brand new
+          try {
+            const batch = writeBatch(db);
+            EVENTS_DATA.forEach((ev) => {
+              batch.set(doc(db, 'events', ev.id), ev);
+            });
+            await batch.commit();
+          } catch (seedErr) {
+            console.warn('Initial events seed check:', seedErr);
+          }
+        } else {
+          const remoteEvents: EventItem[] = [];
+          snapshot.forEach((d) => remoteEvents.push(d.data() as EventItem));
+          state = {
+            ...state,
+            events: remoteEvents,
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.EVENTS, remoteEvents);
+          notify();
+        }
+      },
+      (error) => {
+        state = { ...state, firebaseSyncStatus: 'error' };
+        notify();
+        try {
+          handleFirestoreError(error, OperationType.LIST, eventsPath);
+        } catch {
+          // handled in console
+        }
+      }
+    );
+
+    // 2. Gallery Listener
+    const galleryPath = 'gallery';
+    onSnapshot(
+      collection(db, galleryPath),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          try {
+            const batch = writeBatch(db);
+            GALLERY_ITEMS.forEach((it) => {
+              batch.set(doc(db, 'gallery', it.id), it);
+            });
+            await batch.commit();
+          } catch (seedErr) {
+            console.warn('Initial gallery seed check:', seedErr);
+          }
+        } else {
+          const remoteGallery: GalleryItem[] = [];
+          snapshot.forEach((d) => remoteGallery.push(d.data() as GalleryItem));
+          state = {
+            ...state,
+            gallery: remoteGallery,
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.GALLERY, remoteGallery);
+          notify();
+        }
+      },
+      (error) => {
+        try {
+          handleFirestoreError(error, OperationType.LIST, galleryPath);
+        } catch {
+          // logged
+        }
+      }
+    );
+
+    // 3. News Listener
+    const newsPath = 'news';
+    onSnapshot(
+      collection(db, newsPath),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          try {
+            const batch = writeBatch(db);
+            INITIAL_NEWS_ARTICLES.forEach((art) => {
+              batch.set(doc(db, 'news', art.id), art);
+            });
+            await batch.commit();
+          } catch (seedErr) {
+            console.warn('Initial news seed check:', seedErr);
+          }
+        } else {
+          const remoteNews: NewsArticle[] = [];
+          snapshot.forEach((d) => remoteNews.push(d.data() as NewsArticle));
+          state = {
+            ...state,
+            news: remoteNews,
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.NEWS, remoteNews);
+          notify();
+        }
+      },
+      (error) => {
+        try {
+          handleFirestoreError(error, OperationType.LIST, newsPath);
+        } catch {
+          // logged
+        }
+      }
+    );
+
+    // 4. Testimonials Listener
+    const testimonialsPath = 'testimonials';
+    onSnapshot(
+      collection(db, testimonialsPath),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          try {
+            const batch = writeBatch(db);
+            TESTIMONIAL_SLOTS.forEach((t) => {
+              batch.set(doc(db, 'testimonials', String(t.slotId)), t);
+            });
+            await batch.commit();
+          } catch (seedErr) {
+            console.warn('Initial testimonials seed check:', seedErr);
+          }
+        } else {
+          const remoteTestimonials: TestimonialSlot[] = [];
+          snapshot.forEach((d) => remoteTestimonials.push(d.data() as TestimonialSlot));
+          // Sort by slotId ascending
+          remoteTestimonials.sort((a, b) => a.slotId - b.slotId);
+          state = {
+            ...state,
+            testimonials: remoteTestimonials,
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.TESTIMONIALS, remoteTestimonials);
+          notify();
+        }
+      },
+      (error) => {
+        try {
+          handleFirestoreError(error, OperationType.LIST, testimonialsPath);
+        } catch {
+          // logged
+        }
+      }
+    );
+
+    // 5. Social Posts Listener
+    const socialPath = 'socialPosts';
+    onSnapshot(
+      collection(db, socialPath),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          try {
+            const batch = writeBatch(db);
+            INITIAL_SOCIAL_POSTS.forEach((p) => {
+              batch.set(doc(db, 'socialPosts', p.id), p);
+            });
+            await batch.commit();
+          } catch (seedErr) {
+            console.warn('Initial social seed check:', seedErr);
+          }
+        } else {
+          const remoteSocial: SocialPost[] = [];
+          snapshot.forEach((d) => remoteSocial.push(d.data() as SocialPost));
+          state = {
+            ...state,
+            socialPosts: remoteSocial,
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.SOCIAL, remoteSocial);
+          notify();
+        }
+      },
+      (error) => {
+        try {
+          handleFirestoreError(error, OperationType.LIST, socialPath);
+        } catch {
+          // logged
+        }
+      }
+    );
+
+    // 6. Site Settings Listener
+    const settingsPath = 'settings/site_settings';
+    onSnapshot(
+      doc(db, 'settings', 'site_settings'),
+      async (snapshot) => {
+        if (!snapshot.exists()) {
+          try {
+            await setDoc(doc(db, 'settings', 'site_settings'), INITIAL_SITE_SETTINGS);
+          } catch (seedErr) {
+            console.warn('Initial settings seed check:', seedErr);
+          }
+        } else {
+          const remoteSettings = snapshot.data() as SiteSettings;
+          state = {
+            ...state,
+            settings: { ...INITIAL_SITE_SETTINGS, ...remoteSettings },
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.SETTINGS, state.settings);
+          notify();
+        }
+      },
+      (error) => {
+        try {
+          handleFirestoreError(error, OperationType.GET, settingsPath);
+        } catch {
+          // logged
+        }
+      }
+    );
+  } catch (err) {
+    console.error('Failed to initialize Firestore sync listeners:', err);
+    state = { ...state, firebaseSyncStatus: 'offline' };
+    notify();
+  }
+}
+
+// Start listeners immediately
+initFirestoreSync();
+
+// CMS Store Methods
 export const CMSStore = {
-  // Subscribe helper for React useSyncExternalStore
   subscribe(listener: Listener) {
     listeners.add(listener);
     return () => listeners.delete(listener);
@@ -208,7 +476,6 @@ export const CMSStore = {
     const envPin = (import.meta.env.VITE_ADMIN_PIN || '2026').trim();
     const envPassword = (import.meta.env.VITE_ADMIN_PASSWORD || 'Jaingenius2026').trim();
 
-    // Authenticate against env PIN or env password
     const valid =
       clean === envPin ||
       clean === envPassword ||
@@ -232,12 +499,14 @@ export const CMSStore = {
   },
 
   // --- EVENTS ---
-  addEvent(event: Omit<EventItem, 'id'> & { id?: string }) {
+  async addEvent(event: Omit<EventItem, 'id'> & { id?: string }): Promise<EventItem> {
     const newEvent: EventItem = {
       ...event,
       id: event.id || 'event-' + Date.now(),
       createdAt: new Date().toISOString(),
     };
+
+    // Optimistic local update
     state = {
       ...state,
       events: [newEvent, ...state.events],
@@ -245,10 +514,19 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.EVENTS, state.events);
     logActivity('create', 'events', `Created event: "${newEvent.title}" (${newEvent.status})`);
     notify();
+
+    // Firestore remote write
+    const docPath = `events/${newEvent.id}`;
+    try {
+      await setDoc(doc(db, 'events', newEvent.id), newEvent);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, docPath);
+    }
+
     return newEvent;
   },
 
-  updateEvent(id: string, updates: Partial<EventItem>) {
+  async updateEvent(id: string, updates: Partial<EventItem>): Promise<void> {
     state = {
       ...state,
       events: state.events.map((ev) => (ev.id === id ? { ...ev, ...updates } : ev)),
@@ -256,9 +534,16 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.EVENTS, state.events);
     logActivity('update', 'events', `Updated event: "${updates.title || id}"`);
     notify();
+
+    const docPath = `events/${id}`;
+    try {
+      await updateDoc(doc(db, 'events', id), updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, docPath);
+    }
   },
 
-  deleteEvent(id: string) {
+  async deleteEvent(id: string): Promise<void> {
     const target = state.events.find((ev) => ev.id === id);
     state = {
       ...state,
@@ -267,10 +552,17 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.EVENTS, state.events);
     logActivity('delete', 'events', `Deleted event: "${target?.title || id}"`);
     notify();
+
+    const docPath = `events/${id}`;
+    try {
+      await deleteDoc(doc(db, 'events', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, docPath);
+    }
   },
 
   // --- GALLERY ---
-  addGalleryItem(item: Omit<GalleryItem, 'id'> & { id?: string }) {
+  async addGalleryItem(item: Omit<GalleryItem, 'id'> & { id?: string }): Promise<GalleryItem> {
     const newItem: GalleryItem = {
       ...item,
       id: item.id || 'gal-' + Date.now(),
@@ -281,12 +573,24 @@ export const CMSStore = {
       gallery: [newItem, ...state.gallery],
     };
     saveToStorage(STORAGE_KEYS.GALLERY, state.gallery);
-    logActivity('create', 'gallery', `Uploaded photo to gallery: "${newItem.title}" (${newItem.category})`);
+    logActivity(
+      'create',
+      'gallery',
+      `Uploaded photo to gallery: "${newItem.title}" (${newItem.category})`
+    );
     notify();
+
+    const docPath = `gallery/${newItem.id}`;
+    try {
+      await setDoc(doc(db, 'gallery', newItem.id), newItem);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, docPath);
+    }
+
     return newItem;
   },
 
-  updateGalleryItem(id: string, updates: Partial<GalleryItem>) {
+  async updateGalleryItem(id: string, updates: Partial<GalleryItem>): Promise<void> {
     state = {
       ...state,
       gallery: state.gallery.map((it) => (it.id === id ? { ...it, ...updates } : it)),
@@ -294,9 +598,16 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.GALLERY, state.gallery);
     logActivity('update', 'gallery', `Updated gallery item: "${updates.title || id}"`);
     notify();
+
+    const docPath = `gallery/${id}`;
+    try {
+      await updateDoc(doc(db, 'gallery', id), updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, docPath);
+    }
   },
 
-  deleteGalleryItem(id: string) {
+  async deleteGalleryItem(id: string): Promise<void> {
     const target = state.gallery.find((it) => it.id === id);
     state = {
       ...state,
@@ -305,10 +616,17 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.GALLERY, state.gallery);
     logActivity('delete', 'gallery', `Deleted gallery item: "${target?.title || id}"`);
     notify();
+
+    const docPath = `gallery/${id}`;
+    try {
+      await deleteDoc(doc(db, 'gallery', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, docPath);
+    }
   },
 
   // --- NEWS & ARTICLES ---
-  addNewsArticle(article: Omit<NewsArticle, 'id'> & { id?: string }) {
+  async addNewsArticle(article: Omit<NewsArticle, 'id'> & { id?: string }): Promise<NewsArticle> {
     const newArticle: NewsArticle = {
       ...article,
       id: article.id || 'art-' + Date.now(),
@@ -321,10 +639,18 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.NEWS, state.news);
     logActivity('create', 'news', `Published news article: "${newArticle.title}"`);
     notify();
+
+    const docPath = `news/${newArticle.id}`;
+    try {
+      await setDoc(doc(db, 'news', newArticle.id), newArticle);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, docPath);
+    }
+
     return newArticle;
   },
 
-  updateNewsArticle(id: string, updates: Partial<NewsArticle>) {
+  async updateNewsArticle(id: string, updates: Partial<NewsArticle>): Promise<void> {
     state = {
       ...state,
       news: state.news.map((art) => (art.id === id ? { ...art, ...updates } : art)),
@@ -332,9 +658,16 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.NEWS, state.news);
     logActivity('update', 'news', `Updated news article: "${updates.title || id}"`);
     notify();
+
+    const docPath = `news/${id}`;
+    try {
+      await updateDoc(doc(db, 'news', id), updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, docPath);
+    }
   },
 
-  deleteNewsArticle(id: string) {
+  async deleteNewsArticle(id: string): Promise<void> {
     const target = state.news.find((art) => art.id === id);
     state = {
       ...state,
@@ -343,10 +676,19 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.NEWS, state.news);
     logActivity('delete', 'news', `Deleted news article: "${target?.title || id}"`);
     notify();
+
+    const docPath = `news/${id}`;
+    try {
+      await deleteDoc(doc(db, 'news', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, docPath);
+    }
   },
 
   // --- TESTIMONIALS ---
-  addTestimonial(testimonial: Omit<TestimonialSlot, 'slotId'> & { slotId?: number }) {
+  async addTestimonial(
+    testimonial: Omit<TestimonialSlot, 'slotId'> & { slotId?: number }
+  ): Promise<TestimonialSlot> {
     const maxSlot = state.testimonials.reduce((max, t) => Math.max(max, t.slotId), 0);
     const newSlot: TestimonialSlot = {
       ...testimonial,
@@ -364,13 +706,23 @@ export const CMSStore = {
       `Added testimonial: "${newSlot.studentName || newSlot.label}" (${newSlot.status})`
     );
     notify();
+
+    const docPath = `testimonials/${newSlot.slotId}`;
+    try {
+      await setDoc(doc(db, 'testimonials', String(newSlot.slotId)), newSlot);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, docPath);
+    }
+
     return newSlot;
   },
 
-  updateTestimonial(slotId: number, updates: Partial<TestimonialSlot>) {
+  async updateTestimonial(slotId: number, updates: Partial<TestimonialSlot>): Promise<void> {
     state = {
       ...state,
-      testimonials: state.testimonials.map((t) => (t.slotId === slotId ? { ...t, ...updates } : t)),
+      testimonials: state.testimonials.map((t) =>
+        t.slotId === slotId ? { ...t, ...updates } : t
+      ),
     };
     saveToStorage(STORAGE_KEYS.TESTIMONIALS, state.testimonials);
     logActivity(
@@ -379,9 +731,16 @@ export const CMSStore = {
       `Updated testimonial Slot #${slotId}: "${updates.studentName || updates.label || 'Candidate'}"`
     );
     notify();
+
+    const docPath = `testimonials/${slotId}`;
+    try {
+      await updateDoc(doc(db, 'testimonials', String(slotId)), updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, docPath);
+    }
   },
 
-  deleteTestimonial(slotId: number) {
+  async deleteTestimonial(slotId: number): Promise<void> {
     state = {
       ...state,
       testimonials: state.testimonials.filter((t) => t.slotId !== slotId),
@@ -389,21 +748,36 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.TESTIMONIALS, state.testimonials);
     logActivity('delete', 'testimonials', `Deleted testimonial Slot #${slotId}`);
     notify();
+
+    const docPath = `testimonials/${slotId}`;
+    try {
+      await deleteDoc(doc(db, 'testimonials', String(slotId)));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, docPath);
+    }
   },
 
   // --- SITE SETTINGS ---
-  updateSiteSettings(updates: Partial<SiteSettings>) {
+  async updateSiteSettings(updates: Partial<SiteSettings>): Promise<void> {
+    const updatedSettings = { ...state.settings, ...updates };
     state = {
       ...state,
-      settings: { ...state.settings, ...updates },
+      settings: updatedSettings,
     };
     saveToStorage(STORAGE_KEYS.SETTINGS, state.settings);
     logActivity('update', 'settings', 'Updated website general configurations & banner.');
     notify();
+
+    const docPath = 'settings/site_settings';
+    try {
+      await setDoc(doc(db, 'settings', 'site_settings'), updatedSettings, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, docPath);
+    }
   },
 
   // --- SOCIAL MEDIA POSTS & LIVE FEEDS ---
-  addSocialPost(post: Omit<SocialPost, 'id' | 'createdAt'>): SocialPost {
+  async addSocialPost(post: Omit<SocialPost, 'id' | 'createdAt'>): Promise<SocialPost> {
     const newPost: SocialPost = {
       ...post,
       id: 'sp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
@@ -415,12 +789,24 @@ export const CMSStore = {
       socialPosts: [newPost, ...state.socialPosts],
     };
     saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
-    logActivity('create', 'social', `Added ${post.platform} social post: "${post.caption.substring(0, 40)}..."`);
+    logActivity(
+      'create',
+      'social',
+      `Added ${post.platform} social post: "${post.caption.substring(0, 40)}..."`
+    );
     notify();
+
+    const docPath = `socialPosts/${newPost.id}`;
+    try {
+      await setDoc(doc(db, 'socialPosts', newPost.id), newPost);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, docPath);
+    }
+
     return newPost;
   },
 
-  updateSocialPost(id: string, updates: Partial<SocialPost>): boolean {
+  async updateSocialPost(id: string, updates: Partial<SocialPost>): Promise<boolean> {
     const exists = state.socialPosts.some((p) => p.id === id);
     if (!exists) return false;
     state = {
@@ -430,10 +816,18 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
     logActivity('update', 'social', `Updated social post ID #${id}`);
     notify();
+
+    const docPath = `socialPosts/${id}`;
+    try {
+      await updateDoc(doc(db, 'socialPosts', id), updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, docPath);
+    }
+
     return true;
   },
 
-  deleteSocialPost(id: string): boolean {
+  async deleteSocialPost(id: string): Promise<boolean> {
     const post = state.socialPosts.find((p) => p.id === id);
     if (!post) return false;
     state = {
@@ -441,37 +835,35 @@ export const CMSStore = {
       socialPosts: state.socialPosts.filter((p) => p.id !== id),
     };
     saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
-    logActivity('delete', 'social', `Deleted ${post.platform} post: "${post.caption.substring(0, 30)}..."`);
+    logActivity(
+      'delete',
+      'social',
+      `Deleted ${post.platform} post: "${post.caption.substring(0, 30)}..."`
+    );
     notify();
+
+    const docPath = `socialPosts/${id}`;
+    try {
+      await deleteDoc(doc(db, 'socialPosts', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, docPath);
+    }
+
     return true;
   },
 
-  togglePinSocialPost(id: string): boolean {
+  async togglePinSocialPost(id: string): Promise<boolean> {
     const post = state.socialPosts.find((p) => p.id === id);
     if (!post) return false;
     const newPinned = !post.isPinned;
-    state = {
-      ...state,
-      socialPosts: state.socialPosts.map((p) => (p.id === id ? { ...p, isPinned: newPinned } : p)),
-    };
-    saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
-    logActivity('update', 'social', `${newPinned ? 'Pinned' : 'Unpinned'} social post ID #${id}`);
-    notify();
-    return true;
+    return this.updateSocialPost(id, { isPinned: newPinned });
   },
 
-  togglePublishSocialPost(id: string): boolean {
+  async togglePublishSocialPost(id: string): Promise<boolean> {
     const post = state.socialPosts.find((p) => p.id === id);
     if (!post) return false;
     const newPub = !post.isPublished;
-    state = {
-      ...state,
-      socialPosts: state.socialPosts.map((p) => (p.id === id ? { ...p, isPublished: newPub } : p)),
-    };
-    saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
-    logActivity('update', 'social', `${newPub ? 'Published' : 'Hidden'} social post ID #${id}`);
-    notify();
-    return true;
+    return this.updateSocialPost(id, { isPublished: newPub });
   },
 
   // --- BACKUP & RESTORE ---
@@ -479,7 +871,7 @@ export const CMSStore = {
     const backup = {
       version: '1.0',
       exportedAt: new Date().toISOString(),
-      organization: 'Jain Genius - The Change Makers',
+      institution: 'Jain Genius — The Change Makers',
       data: {
         events: state.events,
         gallery: state.gallery,
@@ -492,48 +884,61 @@ export const CMSStore = {
     return JSON.stringify(backup, null, 2);
   },
 
-  importBackupJSON(jsonStr: string): { success: boolean; message: string } {
+  async importBackupJSON(jsonStr: string): Promise<{ success: boolean; message: string }> {
     try {
       const parsed = JSON.parse(jsonStr);
       if (!parsed.data) {
-        throw new Error('Invalid backup format: Missing data field.');
+        throw new Error('Invalid backup schema: missing root data property.');
       }
       const { events, gallery, news, testimonials, settings, socialPosts } = parsed.data;
 
-      if (events) {
+      const batch = writeBatch(db);
+
+      if (events && Array.isArray(events)) {
         state.events = events;
         saveToStorage(STORAGE_KEYS.EVENTS, events);
+        events.forEach((ev) => batch.set(doc(db, 'events', ev.id), ev));
       }
-      if (gallery) {
+      if (gallery && Array.isArray(gallery)) {
         state.gallery = gallery;
         saveToStorage(STORAGE_KEYS.GALLERY, gallery);
+        gallery.forEach((it) => batch.set(doc(db, 'gallery', it.id), it));
       }
-      if (news) {
+      if (news && Array.isArray(news)) {
         state.news = news;
         saveToStorage(STORAGE_KEYS.NEWS, news);
+        news.forEach((art) => batch.set(doc(db, 'news', art.id), art));
       }
-      if (testimonials) {
+      if (testimonials && Array.isArray(testimonials)) {
         state.testimonials = testimonials;
         saveToStorage(STORAGE_KEYS.TESTIMONIALS, testimonials);
+        testimonials.forEach((t) => batch.set(doc(db, 'testimonials', String(t.slotId)), t));
       }
       if (settings) {
         state.settings = settings;
         saveToStorage(STORAGE_KEYS.SETTINGS, settings);
+        batch.set(doc(db, 'settings', 'site_settings'), settings);
       }
-      if (socialPosts) {
+      if (socialPosts && Array.isArray(socialPosts)) {
         state.socialPosts = socialPosts;
         saveToStorage(STORAGE_KEYS.SOCIAL, socialPosts);
+        socialPosts.forEach((p) => batch.set(doc(db, 'socialPosts', p.id), p));
       }
 
-      logActivity('import', 'system', 'Restored website data from uploaded JSON backup.');
+      await batch.commit();
+
+      logActivity('import', 'system', 'Restored website data from uploaded JSON backup into Firestore.');
       notify();
-      return { success: true, message: 'All website information successfully imported and restored.' };
+      return {
+        success: true,
+        message: 'All website information successfully imported, synced to Firestore and restored.',
+      };
     } catch (e: any) {
       return { success: false, message: e.message || 'Failed to parse JSON backup file.' };
     }
   },
 
-  resetToFactoryDefaults() {
+  async resetToFactoryDefaults(): Promise<void> {
     state = {
       ...state,
       events: EVENTS_DATA,
@@ -550,7 +955,24 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.SETTINGS, INITIAL_SITE_SETTINGS);
     saveToStorage(STORAGE_KEYS.SOCIAL, INITIAL_SOCIAL_POSTS);
 
-    logActivity('reset', 'system', 'Reset all public website collections to factory foundation seeds.');
+    try {
+      const batch = writeBatch(db);
+      EVENTS_DATA.forEach((ev) => batch.set(doc(db, 'events', ev.id), ev));
+      GALLERY_ITEMS.forEach((it) => batch.set(doc(db, 'gallery', it.id), it));
+      INITIAL_NEWS_ARTICLES.forEach((art) => batch.set(doc(db, 'news', art.id), art));
+      TESTIMONIAL_SLOTS.forEach((t) => batch.set(doc(db, 'testimonials', String(t.slotId)), t));
+      INITIAL_SOCIAL_POSTS.forEach((p) => batch.set(doc(db, 'socialPosts', p.id), p));
+      batch.set(doc(db, 'settings', 'site_settings'), INITIAL_SITE_SETTINGS);
+      await batch.commit();
+    } catch (err) {
+      console.warn('Batch reset to Firestore:', err);
+    }
+
+    logActivity(
+      'reset',
+      'system',
+      'Reset all public website collections and synced factory seeds to Firestore.'
+    );
     notify();
   },
 };
@@ -598,7 +1020,6 @@ export function convertImageFileToBase64(
   quality = 0.85
 ): Promise<string> {
   return new Promise((resolve, reject) => {
-    // If not an image, reject
     if (!file.type.startsWith('image/')) {
       reject(new Error('Selected file is not an image'));
       return;
@@ -631,13 +1052,11 @@ export function convertImageFileToBase64(
         }
 
         ctx.drawImage(img, 0, 0, width, height);
-        // Convert to WebP or JPEG for compact storage
         const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
         const dataUrl = canvas.toDataURL(mime, quality);
         resolve(dataUrl);
       };
       img.onerror = () => {
-        // Fallback to raw data url
         resolve(readerEvent.target?.result as string);
       };
       img.src = readerEvent.target?.result as string;

@@ -1,0 +1,136 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'projectworkingonly@gmail.com' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation for events
+    function isValidEvent(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
+             data.date is string && data.date.size() <= 100 &&
+             data.status in ['upcoming', 'ongoing', 'past'];
+    }
+
+    // Validation for gallery
+    function isValidGallery(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
+             data.category is string && data.category.size() <= 100;
+    }
+
+    // Validation for news
+    function isValidNews(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
+             data.category is string && data.category.size() <= 100;
+    }
+
+    // Validation for testimonials
+    function isValidTestimonial(data) {
+      return data.slotId is number &&
+             data.status in ['ready', 'to_supply', 'editing', 'empty'];
+    }
+
+    // Validation for social posts
+    function isValidSocialPost(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.platform in ['instagram', 'youtube', 'twitter', 'telegram', 'whatsapp', 'linkedin', 'facebook'] &&
+             data.postUrl is string && data.postUrl.size() > 0 && data.postUrl.size() <= 2000 &&
+             data.caption is string && data.caption.size() <= 5000;
+    }
+
+    // Test connection endpoint for initialization verification
+    match /test/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Admins registry
+    match /admins/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isAdmin();
+    }
+
+    // Events collection
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if isValidId(eventId) && isValidEvent(incoming());
+      allow update: if isValidId(eventId) && isValidEvent(incoming());
+      allow delete: if isValidId(eventId);
+    }
+
+    // Gallery collection
+    match /gallery/{galleryId} {
+      allow read: if true;
+      allow create: if isValidId(galleryId) && isValidGallery(incoming());
+      allow update: if isValidId(galleryId) && isValidGallery(incoming());
+      allow delete: if isValidId(galleryId);
+    }
+
+    // News collection
+    match /news/{articleId} {
+      allow read: if true;
+      allow create: if isValidId(articleId) && isValidNews(incoming());
+      allow update: if isValidId(articleId) && isValidNews(incoming());
+      allow delete: if isValidId(articleId);
+    }
+
+    // Testimonials collection
+    match /testimonials/{slotId} {
+      allow read: if true;
+      allow create: if isValidId(slotId) && isValidTestimonial(incoming());
+      allow update: if isValidId(slotId) && isValidTestimonial(incoming());
+      allow delete: if isValidId(slotId);
+    }
+
+    // Social Posts collection
+    match /socialPosts/{postId} {
+      allow read: if true;
+      allow create: if isValidId(postId) && isValidSocialPost(incoming());
+      allow update: if isValidId(postId) && isValidSocialPost(incoming());
+      allow delete: if isValidId(postId);
+    }
+
+    // Site settings document
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update: if isValidId(settingId);
+      allow delete: if false;
+    }
+
+    // Activity logs
+    match /activityLogs/{logId} {
+      allow read: if true;
+      allow create: if isValidId(logId);
+      allow update, delete: if false;
+    }
+  }
+}

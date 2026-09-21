@@ -227,7 +227,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, lang, onOpenRegister
               className="text-[#E59A1E] hover:text-[#F3A628] font-semibold flex items-center gap-1 transition-colors"
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Login</span>
+              <span>QA Testing & Admin</span>
             </button>
           </div>
         </div>

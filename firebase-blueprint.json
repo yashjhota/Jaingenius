@@ -1,0 +1,422 @@
+{
+  "entities": {
+    "EventItem": {
+      "title": "EventItem",
+      "description": "Represents an upcoming or past youth assembly, workshop, or spiritual discourse",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique event identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Event headline or title"
+        },
+        "theme": {
+          "type": "string",
+          "description": "Core spiritual or practical theme"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date or date range of the event"
+        },
+        "time": {
+          "type": "string",
+          "description": "Event timing details"
+        },
+        "location": {
+          "type": "string",
+          "description": "Physical venue or assembly hall"
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the program and curriculum"
+        },
+        "highlights": {
+          "type": "array",
+          "description": "List of key sessions or activities"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["upcoming", "ongoing", "past"],
+          "description": "Current lifecycle status of the event"
+        },
+        "registrationOpen": {
+          "type": "boolean",
+          "description": "Whether public registrations are active"
+        },
+        "capacity": {
+          "type": "number",
+          "description": "Maximum seating or hall capacity"
+        },
+        "registeredCount": {
+          "type": "number",
+          "description": "Current number of registered participants"
+        },
+        "category": {
+          "type": "string",
+          "description": "Event track or category"
+        },
+        "venue": {
+          "type": "string",
+          "description": "Specific hall or landmark address"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "title", "date", "status"]
+    },
+    "GalleryItem": {
+      "title": "GalleryItem",
+      "description": "Photographic record and session captures from Jain Genius youth programs",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique gallery identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Photo caption or session title"
+        },
+        "category": {
+          "type": "string",
+          "description": "Album category"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Direct image URL or optimized media reference"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of the capture"
+        },
+        "description": {
+          "type": "string",
+          "description": "Contextual description of the activity"
+        },
+        "location": {
+          "type": "string",
+          "description": "City or venue location"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Searchable thematic tags"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "title", "imageUrl", "category"]
+    },
+    "NewsArticle": {
+      "title": "NewsArticle",
+      "description": "Editorial articles, thought pieces, and official community announcements",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique article identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Article headline"
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL-friendly slug"
+        },
+        "excerpt": {
+          "type": "string",
+          "description": "Short synopsis or summary"
+        },
+        "fullBody": {
+          "type": "array",
+          "description": "Paragraphs of content"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or organization attribution"
+        },
+        "date": {
+          "type": "string",
+          "description": "Publication date"
+        },
+        "category": {
+          "type": "string",
+          "description": "Article category"
+        },
+        "readTime": {
+          "type": "string",
+          "description": "Estimated reading duration"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Header cover image URL"
+        },
+        "isFeatured": {
+          "type": "boolean",
+          "description": "Whether article is pinned on homepage"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "title", "excerpt", "category", "date"]
+    },
+    "TestimonialSlot": {
+      "title": "TestimonialSlot",
+      "description": "Verified youth participant journey and personal transformation story",
+      "type": "object",
+      "properties": {
+        "slotId": {
+          "type": "number",
+          "description": "Display order slot number"
+        },
+        "name": {
+          "type": "string",
+          "description": "Student or trainee name"
+        },
+        "age": {
+          "type": "number",
+          "description": "Age of participant"
+        },
+        "city": {
+          "type": "string",
+          "description": "Resident city"
+        },
+        "quote": {
+          "type": "string",
+          "description": "Impact statement or testimonial"
+        },
+        "transformation": {
+          "type": "string",
+          "description": "Observable personal or professional breakthrough"
+        },
+        "badge": {
+          "type": "string",
+          "description": "Achievement designation"
+        },
+        "shivirAttended": {
+          "type": "string",
+          "description": "Cohort or shivir attended"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Portrait image URL"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ready", "editing", "empty"],
+          "description": "Slot status"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["slotId", "name", "quote", "status"]
+    },
+    "SocialPost": {
+      "title": "SocialPost",
+      "description": "Dynamic social media feed item embedded from Instagram, YouTube, X, Telegram, or WhatsApp",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique social post ID"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["instagram", "youtube", "twitter", "telegram", "whatsapp", "linkedin", "facebook"],
+          "description": "Social channel origin"
+        },
+        "postUrl": {
+          "type": "string",
+          "description": "Direct external source URL"
+        },
+        "caption": {
+          "type": "string",
+          "description": "Post caption, summary, or headline"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Account display name"
+        },
+        "authorHandle": {
+          "type": "string",
+          "description": "Handle or username"
+        },
+        "date": {
+          "type": "string",
+          "description": "Display date or relative time"
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Thumbnail preview image"
+        },
+        "videoEmbedUrl": {
+          "type": "string",
+          "description": "Embeddable video iframe URL"
+        },
+        "likesOrEngagement": {
+          "type": "string",
+          "description": "Engagement badge or metrics summary"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Hashtags and topic labels"
+        },
+        "isPinned": {
+          "type": "boolean",
+          "description": "Whether pinned to top of live feed"
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Whether visible to the public"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "platform", "postUrl", "caption"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global website configuration, notice banner, contact information, and registration links",
+      "type": "object",
+      "properties": {
+        "bannerEnabled": {
+          "type": "boolean",
+          "description": "Whether global alert banner is visible"
+        },
+        "bannerTextEn": {
+          "type": "string",
+          "description": "Notice text in English"
+        },
+        "bannerTextHi": {
+          "type": "string",
+          "description": "Notice text in Hindi"
+        },
+        "bannerLink": {
+          "type": "string",
+          "description": "Target page for notice banner click"
+        },
+        "bannerLinkText": {
+          "type": "string",
+          "description": "Call-to-action text on notice banner"
+        },
+        "contactPhone": {
+          "type": "string",
+          "description": "Helpline phone number"
+        },
+        "contactEmail": {
+          "type": "string",
+          "description": "Official support email"
+        },
+        "googleFormUrl": {
+          "type": "string",
+          "description": "Public admission Google Form URL"
+        },
+        "whatsappGroupUrl": {
+          "type": "string",
+          "description": "WhatsApp community group invite link"
+        },
+        "currentTraineesCount": {
+          "type": "number",
+          "description": "Active trainees count displayed on site"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      }
+    },
+    "AdminActivityLog": {
+      "title": "AdminActivityLog",
+      "description": "Audit record of admin content changes and system maintenance",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique log entry ID"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO timestamp of the action"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["create", "update", "delete", "reset", "import"],
+          "description": "Action type"
+        },
+        "module": {
+          "type": "string",
+          "enum": ["events", "gallery", "news", "testimonials", "settings", "social", "system"],
+          "description": "Module affected"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable summary of the action"
+        }
+      },
+      "required": ["id", "timestamp", "action", "module", "description"]
+    }
+  },
+  "firestore": {
+    "/events/{eventId}": {
+      "schema": "EventItem",
+      "description": "Collection of youth seminars, discourses, and assemblies"
+    },
+    "/gallery/{galleryId}": {
+      "schema": "GalleryItem",
+      "description": "Collection of photographic captures and session memories"
+    },
+    "/news/{articleId}": {
+      "schema": "NewsArticle",
+      "description": "Collection of editorial articles, reflections, and news"
+    },
+    "/testimonials/{slotId}": {
+      "schema": "TestimonialSlot",
+      "description": "Collection of student transformation stories and quotes"
+    },
+    "/socialPosts/{postId}": {
+      "schema": "SocialPost",
+      "description": "Collection of live social media updates from Instagram, YouTube, X, and Telegram"
+    },
+    "/settings/{settingId}": {
+      "schema": "SiteSettings",
+      "description": "Global website configuration document"
+    },
+    "/activityLogs/{logId}": {
+      "schema": "AdminActivityLog",
+      "description": "Audit log collection of admin actions"
+    }
+  }
+}

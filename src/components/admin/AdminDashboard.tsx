@@ -7,6 +7,7 @@ import { NewsManager } from './NewsManager';
 import { TestimonialsManager } from './TestimonialsManager';
 import { SiteSettingsManager } from './SiteSettingsManager';
 import { SocialFeedManager } from './SocialFeedManager';
+import { TestingManager } from './TestingManager';
 import { Logo } from '../common/Logo';
 import {
   ShieldCheck,
@@ -47,12 +48,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
     isAuthenticated,
     login,
     logout,
+    firebaseSyncStatus,
+    lastSyncedAt,
   } = useCMS();
 
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'events' | 'gallery' | 'news' | 'social' | 'testimonials' | 'settings'
+    'overview' | 'events' | 'gallery' | 'news' | 'social' | 'testimonials' | 'settings' | 'testing'
   >('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -180,9 +183,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
               </div>
             </button>
 
-            <span className="hidden md:inline-block px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider">
-              Live Database Connected
-            </span>
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-semibold text-emerald-400">
+              <span className="relative flex h-2 w-2">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                  firebaseSyncStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400'
+                } opacity-75`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                  firebaseSyncStatus === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'
+                }`}></span>
+              </span>
+              <span>
+                {firebaseSyncStatus === 'connected'
+                  ? 'Cloud Firestore: Real-time Live'
+                  : firebaseSyncStatus === 'syncing'
+                  ? 'Connecting to Firestore...'
+                  : 'Firestore Offline'}
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 text-xs">
@@ -290,6 +307,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
             <Settings className="w-3.5 h-3.5" />
             <span>Site Settings & Backup</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('testing')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-colors ${
+              activeTab === 'testing'
+                ? 'bg-[#E59A1E] text-[#0C1B2A] font-bold shadow-xs'
+                : 'text-slate-300 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>QA Testing & Diagnostics</span>
+          </button>
         </div>
       </header>
 
@@ -317,6 +346,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
                   <Eye className="w-3.5 h-3.5 text-[#E59A1E]" />
                   <span>Preview Live Website</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Firebase Live Cloud Database Card */}
+            <div className="bg-gradient-to-r from-[#0C1B2A] to-[#162E4A] rounded-3xl p-6 border border-[#E59A1E]/30 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                    Google Cloud Firestore Real-Time Database Active
+                  </span>
+                </div>
+                <h3 className="text-base font-bold text-[#FAF8F5] font-display">
+                  Live Database Connected & Bidirectionally Synchronized
+                </h3>
+                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                  All additions, modifications, and deletions made in this admin dashboard are persisted immediately in Firestore (Project: <code className="bg-black/30 px-1.5 py-0.5 rounded text-[#F5B738] font-mono text-[11px]">studio-3012200389-9b4f3</code>) and stream in real-time across public visitors and all devices without requiring page refreshes.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+                <div className="bg-white/10 px-3.5 py-2 rounded-2xl border border-white/10 text-left">
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider">Status</div>
+                  <div className="text-xs font-bold text-emerald-300">
+                    {firebaseSyncStatus === 'connected' ? 'Connected (Live)' : 'Synchronizing...'}
+                  </div>
+                </div>
+                {lastSyncedAt && (
+                  <div className="bg-white/10 px-3.5 py-2 rounded-2xl border border-white/10 text-left">
+                    <div className="text-[10px] text-slate-400 uppercase tracking-wider">Last Stream</div>
+                    <div className="text-xs font-bold text-slate-200">
+                      {new Date(lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -493,6 +559,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
                   Update top notice bar, phone helpline, and Google Form link.
                 </p>
               </button>
+
+              <button
+                onClick={() => setActiveTab('testing')}
+                className="p-5 rounded-3xl bg-gradient-to-br from-[#0C1B2A] to-[#1a385c] text-white text-left space-y-2 hover:shadow-lg transition-all group border border-[#E59A1E]/30"
+              >
+                <div className="w-8 h-8 rounded-xl bg-[#E59A1E]/20 text-[#F5B738] flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <h4 className="text-sm font-bold font-display text-white">
+                  Run QA Test Suite
+                </h4>
+                <p className="text-xs text-slate-300">
+                  Execute UI, Unit, Integration, Firestore DB tests & download PDF report.
+                </p>
+              </button>
             </div>
 
             {/* Audit & Activity Logs */}
@@ -573,6 +654,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
         {/* Tab 6: Site Settings & Backup */}
         {activeTab === 'settings' && (
           <SiteSettingsManager onNavigate={onNavigate} showToast={showToast} />
+        )}
+
+        {/* Tab 7: QA Testing Suite & Diagnostic Lab */}
+        {activeTab === 'testing' && (
+          <TestingManager showToast={showToast} />
         )}
       </main>
     </div>

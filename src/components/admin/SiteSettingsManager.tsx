@@ -50,28 +50,32 @@ export const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({
     showToast('Downloaded website data backup file (JSON).');
   };
 
-  const handleImportSubmit = (e: React.FormEvent) => {
+  const handleImportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setImportError(null);
     if (!importJsonText.trim()) return;
 
-    const res = importBackupJSON(importJsonText);
-    if (res.success) {
-      showToast(res.message);
-      setImportJsonText('');
-      setFormData({ ...settings });
-    } else {
-      setImportError(res.message);
+    try {
+      const res = await importBackupJSON(importJsonText);
+      if (res.success) {
+        showToast(res.message);
+        setImportJsonText('');
+        setFormData({ ...settings });
+      } else {
+        setImportError(res.message);
+      }
+    } catch (err: any) {
+      setImportError(err.message || 'Failed to import backup to Firestore.');
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (
       window.confirm(
         'Are you sure you want to reset all website events, gallery, news, and testimonials to foundation defaults? This will erase custom additions.'
       )
     ) {
-      resetToFactoryDefaults();
+      await resetToFactoryDefaults();
       showToast('All website collections reset to foundation seeds.');
       setFormData({ ...settings });
     }
