@@ -174,6 +174,7 @@ export interface SiteSettings {
   phoneDisplay: string;
   email: string;
   whatsappGroupUrl: string;
+  whatsappCommunityUrl?: string;
   membershipDeposit: string;
   currentTraineesCount: number;
   programsCount: string;
@@ -182,6 +183,20 @@ export interface SiteSettings {
   tagline: string;
   subTagline: string;
   initiativeOf: string;
+  // Social media handles & URLs for public viewing
+  instagramUrl: string;
+  instagramHandle: string;
+  youtubeUrl: string;
+  youtubeHandle?: string;
+  telegramUrl: string;
+  twitterUrl?: string;
+  linkedinUrl?: string;
+  memberPortalUrl?: string;
+  // Attribution & Venue details
+  designerCreditName?: string;
+  designerCreditUrl?: string;
+  address?: string;
+  targetAge?: string;
 }
 
 export type SocialPlatform =

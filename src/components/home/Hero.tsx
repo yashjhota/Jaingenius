@@ -15,7 +15,12 @@ interface HeroProps {
 export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) => {
   const t = TRANSLATIONS[lang];
   const { settings } = useCMS();
-  const traineesCount = settings.activeTraineesCount || SITE_CONFIG.currentTraineesCount;
+  const traineesCount = settings.currentTraineesCount ?? SITE_CONFIG.currentTraineesCount;
+  const initiativeOf = settings.initiativeOf || SITE_CONFIG.initiativeOf;
+  const memberPortalUrl = settings.memberPortalUrl || SITE_CONFIG.memberPortalUrl;
+  const membershipDeposit = settings.membershipDeposit || SITE_CONFIG.membershipDeposit;
+  const targetAge = settings.targetAge || 'Youth (15–30)';
+  const tagline = settings.tagline || 'The Change Makers';
 
   return (
     <section className="relative pt-12 pb-20 md:pt-16 md:pb-28 bg-[#0C1B2A] text-[#FAF8F5] overflow-hidden">
@@ -43,7 +48,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#162E4A] border border-[#E59A1E]/30 text-[#F3A628] text-xs font-semibold shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-[#E59A1E]" />
               <span className="truncate max-w-[320px] sm:max-w-none">
-                {t.guidedBy}
+                {t.guidedBy} {initiativeOf}
               </span>
             </div>
 
@@ -52,13 +57,13 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#FAF8F5] tracking-tight leading-[1.1] font-display">
                 Jain Genius <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5B738] via-[#E59A1E] to-[#F3A628]">
-                  The Change Makers
+                  {tagline}
                 </span>
               </h1>
 
               {/* Supporting Mission Message */}
               <p className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-normal">
-                {t.heroMission}
+                {settings.subTagline || t.heroMission}
               </p>
             </div>
 
@@ -68,7 +73,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
                 <span className="text-[11px] font-bold text-[#F3A628] block uppercase tracking-wider">
                   Target Age
                 </span>
-                <span className="text-sm font-bold text-white block mt-0.5">Youth (15–30)</span>
+                <span className="text-sm font-bold text-white block mt-0.5">{targetAge}</span>
               </div>
               <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-left">
                 <span className="text-[11px] font-bold text-[#F3A628] block uppercase tracking-wider">
@@ -88,7 +93,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
               <button
                 onClick={onOpenRegister}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold text-[#0C1B2A] bg-gradient-to-r from-[#F5B738] to-[#E59A1E] hover:from-[#FBC658] hover:to-[#F3A628] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold text-[#0C1B2A] bg-gradient-to-r from-[#F5B738] to-[#E59A1E] hover:from-[#FBC658] hover:to-[#F3A628] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
               >
                 <span>{t.becomeMember}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -99,16 +104,16 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
                   onNavigate('what-we-do');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-base font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/20 transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-base font-semibold text-white bg-white/10 hover:bg-white/15 border border-white/20 transition-all cursor-pointer"
               >
                 <span>{t.whatWeDo}</span>
               </button>
 
               <a
-                href={SITE_CONFIG.memberPortalUrl}
+                href={memberPortalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl text-sm font-semibold text-[#F3A628] hover:text-white bg-[#162E4A]/60 hover:bg-[#162E4A] border border-[#E59A1E]/30 transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl text-sm font-semibold text-[#F3A628] hover:text-white bg-[#162E4A]/60 hover:bg-[#162E4A] border border-[#E59A1E]/30 transition-all cursor-pointer"
                 title="Direct link to deployed member application"
               >
                 <UserCheck className="w-4 h-4" />
@@ -120,7 +125,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
             {/* Trust and Verification Micro-text */}
             <div className="flex items-center justify-center lg:justify-start gap-2 text-xs text-slate-400 pt-1">
               <ShieldCheck className="w-4 h-4 text-[#E59A1E]" />
-              <span>Membership Deposit: {SITE_CONFIG.membershipDeposit} • Guided by Jain Values</span>
+              <span>Membership Deposit: {membershipDeposit} • Guided by Jain Values</span>
             </div>
           </div>
 

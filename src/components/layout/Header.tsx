@@ -66,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
             <span className="hidden md:inline text-slate-500">•</span>
             <span className="hidden md:inline text-slate-400">
-              {SITE_CONFIG.initiativeOf}
+              {settings.initiativeOf || SITE_CONFIG.initiativeOf}
             </span>
           </div>
 
@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Enquiry: {settings.phoneDisplay || SITE_CONFIG.contact.phoneDisplay}</span>
             </a>
             <a
-              href={SITE_CONFIG.memberPortalUrl}
+              href={settings.memberPortalUrl || SITE_CONFIG.memberPortalUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:inline-flex items-center gap-1 text-[#F3A628] hover:underline font-semibold"
@@ -317,7 +317,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Member Login Direct link */}
             <a
-              href={SITE_CONFIG.memberPortalUrl}
+              href={settings.memberPortalUrl || SITE_CONFIG.memberPortalUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-2.5 px-4 rounded-xl text-center text-sm font-semibold text-white bg-[#162B42] border border-[#E59A1E]/50 flex items-center justify-center gap-2"
@@ -332,10 +332,10 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="pt-2 text-center text-xs text-slate-400">
               <span>{t.registrationHelpline}: </span>
               <a
-                href={`tel:${SITE_CONFIG.contact.phone}`}
+                href={`tel:${settings.phone || SITE_CONFIG.contact.phone}`}
                 className="text-[#F3A628] font-semibold underline"
               >
-                {SITE_CONFIG.contact.name} ({SITE_CONFIG.contact.phoneDisplay})
+                {settings.phoneDisplay || SITE_CONFIG.contact.phoneDisplay}
               </a>
             </div>
           </div>

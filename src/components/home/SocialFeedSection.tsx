@@ -105,9 +105,17 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
   maxItems,
   showHeaderAction = true,
 }) => {
-  const { socialPosts } = useCMS();
+  const { socialPosts, settings } = useCMS();
   const [activePlatform, setActivePlatform] = useState<string>('all');
   const [activeVideoPost, setActiveVideoPost] = useState<SocialPost | null>(null);
+
+  // Dynamic social handles & links from CMS
+  const instagramUrl = settings.instagramUrl || SITE_CONFIG.social.instagram;
+  const instagramHandle = settings.instagramHandle || '@jaingenius';
+  const youtubeUrl = settings.youtubeUrl || SITE_CONFIG.social.youtube;
+  const whatsappUrl =
+    settings.whatsappCommunityUrl || settings.whatsappGroupUrl || SITE_CONFIG.social.whatsappCommunity;
+  const telegramUrl = settings.telegramUrl || SITE_CONFIG.social.telegram;
 
   // Only show published posts, sorted pinned first, then newest
   const publishedPosts = socialPosts
@@ -162,35 +170,53 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
 
           {/* Social Follow Actions */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <a
-              href="https://www.instagram.com/yashjhota"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 hover:from-pink-500/20 hover:to-purple-500/20 border border-pink-500/30 text-xs font-semibold text-slate-800 transition-all hover:scale-105"
-            >
-              <Instagram className="w-3.5 h-3.5 text-pink-600" />
-              <span>Follow @yashjhota</span>
-            </a>
+            {instagramUrl && (
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-pink-500/10 to-purple-500/10 hover:from-pink-500/20 hover:to-purple-500/20 border border-pink-500/30 text-xs font-semibold text-slate-800 transition-all hover:scale-105"
+              >
+                <Instagram className="w-3.5 h-3.5 text-pink-600" />
+                <span>Follow {instagramHandle}</span>
+              </a>
+            )}
 
-            <a
-              href={SITE_CONFIG.social.youtube}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-semibold text-slate-800 transition-all hover:scale-105"
-            >
-              <Youtube className="w-3.5 h-3.5 text-red-600" />
-              <span>YouTube</span>
-            </a>
+            {youtubeUrl && (
+              <a
+                href={youtubeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs font-semibold text-slate-800 transition-all hover:scale-105"
+              >
+                <Youtube className="w-3.5 h-3.5 text-red-600" />
+                <span>YouTube</span>
+              </a>
+            )}
 
-            <a
-              href={SITE_CONFIG.social.whatsappCommunity}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-slate-800 transition-all hover:scale-105"
-            >
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-              <span>WhatsApp Group</span>
-            </a>
+            {whatsappUrl && (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-xs font-semibold text-slate-800 transition-all hover:scale-105"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>WhatsApp Community</span>
+              </a>
+            )}
+
+            {telegramUrl && (
+              <a
+                href={telegramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 text-xs font-semibold text-slate-800 transition-all hover:scale-105"
+              >
+                <Send className="w-3.5 h-3.5 text-sky-600" />
+                <span>Telegram</span>
+              </a>
+            )}
 
             {showHeaderAction && onNavigate && (
               <button

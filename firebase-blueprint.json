@@ -352,6 +352,50 @@
           "type": "number",
           "description": "Active trainees count displayed on site"
         },
+        "instagramUrl": {
+          "type": "string",
+          "description": "Official Instagram profile URL"
+        },
+        "instagramHandle": {
+          "type": "string",
+          "description": "Instagram account username/handle displayed to visitors"
+        },
+        "youtubeUrl": {
+          "type": "string",
+          "description": "Official YouTube channel link"
+        },
+        "telegramUrl": {
+          "type": "string",
+          "description": "Official Telegram broadcast/group link"
+        },
+        "twitterUrl": {
+          "type": "string",
+          "description": "Official X (Twitter) profile URL"
+        },
+        "whatsappCommunityUrl": {
+          "type": "string",
+          "description": "Main WhatsApp community link"
+        },
+        "memberPortalUrl": {
+          "type": "string",
+          "description": "External member portal URL"
+        },
+        "designerCreditName": {
+          "type": "string",
+          "description": "Designer / developer attribution name in footer"
+        },
+        "designerCreditUrl": {
+          "type": "string",
+          "description": "Designer profile / Instagram URL"
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical headquarters / assembly venue address"
+        },
+        "targetAge": {
+          "type": "string",
+          "description": "Target demographic age range"
+        },
         "updatedAt": {
           "type": "string",
           "description": "ISO timestamp of last update"

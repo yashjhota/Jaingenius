@@ -12,7 +12,9 @@ interface LiveMetricsProps {
 export const LiveMetrics: React.FC<LiveMetricsProps> = ({ lang }) => {
   const { settings } = useCMS();
   const t = TRANSLATIONS[lang];
-  const count = settings.activeTraineesCount || SITE_CONFIG.currentTraineesCount;
+  const count = settings.currentTraineesCount ?? SITE_CONFIG.currentTraineesCount;
+  const programsCount = settings.programsCount || SITE_CONFIG.programsCount;
+  const eventsCount = settings.eventsCount || SITE_CONFIG.eventsCount;
 
   return (
     <section className="py-12 bg-[#0C1B2A] text-white border-y border-[#E59A1E]/30 relative overflow-hidden">
@@ -55,7 +57,7 @@ export const LiveMetrics: React.FC<LiveMetricsProps> = ({ lang }) => {
                 <GraduationCap className="w-5 h-5" />
               </div>
               <div className="text-2xl sm:text-3xl font-extrabold text-[#FAF8F5] font-display">
-                {SITE_CONFIG.programsCount}
+                {programsCount}
               </div>
               <div className="text-xs font-semibold text-slate-300 mt-1">
                 {t.programsCountLabel}
@@ -71,7 +73,7 @@ export const LiveMetrics: React.FC<LiveMetricsProps> = ({ lang }) => {
                 <Calendar className="w-5 h-5" />
               </div>
               <div className="text-2xl sm:text-3xl font-extrabold text-[#FAF8F5] font-display">
-                {SITE_CONFIG.eventsCount}
+                {eventsCount}
               </div>
               <div className="text-xs font-semibold text-slate-300 mt-1">
                 {t.eventsHeldLabel}

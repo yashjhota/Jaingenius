@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SITE_CONFIG } from '../../data/siteConfig';
 import { Language, PageId } from '../../types';
 import { TRANSLATIONS } from '../../data/i18n';
+import { useCMS } from '../../services/cmsStore';
 import {
   submitContactDetailsToGoogleForm,
   getGoogleFormViewUrl,
@@ -29,6 +30,7 @@ interface ContactViewProps {
 }
 
 export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOpenRegister }) => {
+  const { settings } = useCMS();
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
@@ -41,7 +43,17 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
     message: '',
   });
 
-  const formUrl = getGoogleFormViewUrl();
+  // Dynamic values with fallback to siteConfig
+  const phone = settings.phone || SITE_CONFIG.contact.phone;
+  const phoneDisplay = settings.phoneDisplay || SITE_CONFIG.contact.phoneDisplay;
+  const email = settings.email || SITE_CONFIG.contact.email;
+  const whatsappUrl =
+    settings.whatsappCommunityUrl || settings.whatsappGroupUrl || SITE_CONFIG.contact.whatsappUrl;
+  const whatsappGroupUrl =
+    settings.whatsappCommunityUrl || settings.whatsappGroupUrl || SITE_CONFIG.contact.whatsappGroupUrl;
+  const address =
+    settings.address || 'Pathshala Hall, Chickpet Jain Temple, Chickpet, Bangalore, Karnataka, India';
+  const formUrl = settings.googleFormUrl || getGoogleFormViewUrl();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +84,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
     }
   };
 
-  const whatsappInquiryUrl = `https://wa.me/91${SITE_CONFIG.contact.phone}?text=${encodeURIComponent(
+  const whatsappInquiryUrl = `https://wa.me/91${phone}?text=${encodeURIComponent(
     `Jai Jinendra Gaurav ji,\n\nI have submitted an enquiry regarding Jain Genius - The Change Makers.\nName: ${formData.name || 'Visitor'}\nPhone: ${formData.phone}\nSubject: ${formData.subject || 'General Enquiry'}\nCategory: ${formData.category}\n\nKindly guide me.`
   )}`;
 
@@ -120,18 +132,18 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
 
               <div className="space-y-3 pt-2">
                 <a
-                  href={`tel:${SITE_CONFIG.contact.phone}`}
+                  href={`tel:${phone}`}
                   className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
                 >
                   <Phone className="w-5 h-5 text-[#E59A1E]" />
                   <div>
                     <span className="text-[11px] text-slate-400 block font-semibold">Direct Phone Call</span>
-                    <span className="text-sm font-bold text-[#0C1B2A]">{SITE_CONFIG.contact.phoneDisplay}</span>
+                    <span className="text-sm font-bold text-[#0C1B2A]">{phoneDisplay}</span>
                   </div>
                 </a>
 
                 <a
-                  href={SITE_CONFIG.contact.whatsappUrl}
+                  href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-3 rounded-xl bg-[#25D366]/10 hover:bg-[#25D366]/20 border border-[#25D366]/30 transition-colors"
@@ -139,18 +151,18 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
                   <MessageCircle className="w-5 h-5 text-[#25D366]" />
                   <div>
                     <span className="text-[11px] text-emerald-800 block font-semibold">Instant WhatsApp Chat</span>
-                    <span className="text-sm font-bold text-[#0C1B2A]">Connect with Gaurav</span>
+                    <span className="text-sm font-bold text-[#0C1B2A]">Connect with Coordinator</span>
                   </div>
                 </a>
 
                 <a
-                  href={`mailto:${SITE_CONFIG.contact.email}`}
+                  href={`mailto:${email}`}
                   className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
                 >
                   <Mail className="w-5 h-5 text-[#E59A1E]" />
                   <div>
                     <span className="text-[11px] text-slate-400 block font-semibold">Official Email</span>
-                    <span className="text-sm font-bold text-[#0C1B2A]">{SITE_CONFIG.contact.email}</span>
+                    <span className="text-sm font-bold text-[#0C1B2A]">{email}</span>
                   </div>
                 </a>
               </div>
@@ -165,7 +177,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
                     Regular Meeting & Assembly Location
                   </h4>
                   <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
-                    <strong>Pathshala Hall</strong>, Chickpet Jain Temple, Chickpet, Bangalore, Karnataka, India.
+                    {address}
                   </p>
                 </div>
               </div>
@@ -187,7 +199,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
                 Stay updated on weekly session schedules, daily pravachan links, and youth volunteering drives.
               </p>
               <a
-                href={SITE_CONFIG.contact.whatsappGroupUrl}
+                href={whatsappGroupUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-[#0C1B2A] text-xs font-bold transition-colors"

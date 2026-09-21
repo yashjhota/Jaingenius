@@ -100,6 +100,7 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
   phoneDisplay: SITE_CONFIG.contact.phoneDisplay,
   email: SITE_CONFIG.contact.email,
   whatsappGroupUrl: SITE_CONFIG.contact.whatsappGroupUrl,
+  whatsappCommunityUrl: SITE_CONFIG.social.whatsappCommunity,
   membershipDeposit: SITE_CONFIG.membershipDeposit,
   currentTraineesCount: SITE_CONFIG.currentTraineesCount,
   programsCount: SITE_CONFIG.programsCount,
@@ -108,6 +109,18 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
   tagline: SITE_CONFIG.tagline,
   subTagline: SITE_CONFIG.subTagline,
   initiativeOf: SITE_CONFIG.initiativeOf,
+  instagramUrl: SITE_CONFIG.social.instagram,
+  instagramHandle: '@jaingenius',
+  youtubeUrl: SITE_CONFIG.social.youtube,
+  youtubeHandle: '@jaingenius',
+  telegramUrl: SITE_CONFIG.social.telegram,
+  twitterUrl: SITE_CONFIG.social.twitter,
+  linkedinUrl: '',
+  memberPortalUrl: SITE_CONFIG.memberPortalUrl,
+  designerCreditName: 'jhota',
+  designerCreditUrl: 'https://www.instagram.com/yashjhota',
+  address: 'Pathshala Hall, Chickpet Jain Temple, Chickpet, Bangalore, Karnataka, India',
+  targetAge: SITE_CONFIG.targetAge,
 };
 
 // Storage keys for local caching & offline support
@@ -866,6 +879,40 @@ export const CMSStore = {
     return this.updateSocialPost(id, { isPublished: newPub });
   },
 
+  // --- OPTIMIZED QUERY RETRIEVAL METHODS ---
+  getEventById(id: string): EventItem | undefined {
+    return state.events.find((e) => e.id === id);
+  },
+
+  getGalleryById(id: string): GalleryItem | undefined {
+    return state.gallery.find((g) => g.id === id);
+  },
+
+  getNewsById(id: string): NewsArticle | undefined {
+    return state.news.find((n) => n.id === id);
+  },
+
+  getSocialPostById(id: string): SocialPost | undefined {
+    return state.socialPosts.find((p) => p.id === id);
+  },
+
+  getPublishedSocialPosts(): SocialPost[] {
+    return state.socialPosts
+      .filter((p) => p.isPublished !== false)
+      .sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      });
+  },
+
+  getEventsSorted(statusFilter?: 'upcoming' | 'ongoing' | 'past'): EventItem[] {
+    const list = statusFilter
+      ? state.events.filter((e) => e.status === statusFilter)
+      : state.events;
+    return [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
   // --- BACKUP & RESTORE ---
   exportBackupJSON(): string {
     const backup = {
@@ -1010,6 +1057,13 @@ export function useCMS() {
     exportBackupJSON: CMSStore.exportBackupJSON,
     importBackupJSON: CMSStore.importBackupJSON,
     resetToFactoryDefaults: CMSStore.resetToFactoryDefaults,
+    // Optimized fast retrieval queries
+    getEventById: CMSStore.getEventById,
+    getGalleryById: CMSStore.getGalleryById,
+    getNewsById: CMSStore.getNewsById,
+    getSocialPostById: CMSStore.getSocialPostById,
+    getPublishedSocialPosts: CMSStore.getPublishedSocialPosts,
+    getEventsSorted: CMSStore.getEventsSorted,
   };
 }
 
