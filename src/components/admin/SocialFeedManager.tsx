@@ -686,7 +686,7 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
                     type="text"
                     value={formData.authorHandle}
                     onChange={(e) => setFormData({ ...formData, authorHandle: e.target.value })}
-                    placeholder="e.g. @jaingenius.tcm
+                    placeholder="e.g. @jaingenius.tcm"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#081320] border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-[#E59A1E]"
                   />
                 </div>
