@@ -16,7 +16,7 @@ export const SITE_CONFIG = {
     whatsappGroupUrl: 'https://chat.whatsapp.com/invite/jaingenius-tcm',
   },
   social: {
-    instagram: 'https://www.instagram.com/yashjhota',
+    instagram: 'https://www.instagram.com/jaingenius.tcm',
     youtube: 'https://www.youtube.com/@jaingenius',
     whatsappCommunity: 'https://chat.whatsapp.com/invite/jaingenius-tcm',
     telegram: 'https://t.me/jaingeniusorg',

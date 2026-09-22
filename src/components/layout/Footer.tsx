@@ -41,7 +41,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, lang, onOpenRegister
 
   // Social handles & URLs
   const instagramUrl = settings.instagramUrl || SITE_CONFIG.social.instagram;
-  const instagramHandle = settings.instagramHandle || '@jaingenius';
+  const instagramHandle = settings.instagramHandle || '@jaingenius.tcm';
   const youtubeUrl = settings.youtubeUrl || SITE_CONFIG.social.youtube;
   const telegramUrl = settings.telegramUrl || SITE_CONFIG.social.telegram;
   const twitterUrl = settings.twitterUrl || SITE_CONFIG.social.twitter;
