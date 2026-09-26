@@ -171,6 +171,9 @@ export const InPageSectionEditorModal: React.FC<InPageSectionEditorModalProps> =
       });
       onShowToast('Hero section & banner updated in cloud database!');
       onClose();
+    } catch (error) {
+      console.error('Failed to save hero section settings:', error);
+      onShowToast('Could not save hero settings to the cloud. Check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }

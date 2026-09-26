@@ -4,6 +4,7 @@ import {
   TestSuiteSummary, 
   TestCaseResult, 
   TestCategory, 
+  TEST_CASE_COUNT,
   calculateContrastRatio,
   validateAndFormatPhone,
   calculateCareerTrackRecommendation
@@ -155,7 +156,7 @@ export const TestingManager: React.FC<TestingManagerProps> = ({ showToast }) => 
               {isRunning ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Executing ({progressCount}/18)...</span>
+                  <span>Executing ({progressCount}/{TEST_CASE_COUNT})...</span>
                 </>
               ) : (
                 <>
@@ -190,12 +191,12 @@ export const TestingManager: React.FC<TestingManagerProps> = ({ showToast }) => 
           <div className="mt-6 space-y-1.5">
             <div className="flex justify-between text-xs text-slate-300">
               <span>Running automated test assertions across all layers...</span>
-              <span>{Math.round((progressCount / 18) * 100)}%</span>
+              <span>{Math.round((progressCount / TEST_CASE_COUNT) * 100)}%</span>
             </div>
             <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
               <div
                 className="bg-gradient-to-r from-[#F5B738] to-[#E59A1E] h-full transition-all duration-300"
-                style={{ width: `${Math.min(100, Math.round((progressCount / 18) * 100))}%` }}
+                style={{ width: `${Math.min(100, Math.round((progressCount / TEST_CASE_COUNT) * 100))}%` }}
               />
             </div>
           </div>

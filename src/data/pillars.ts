@@ -11,13 +11,13 @@ export const HOLISTIC_PILLARS: HolisticPillar[] = [
     keyActivitiesEn: [
       'Daily Laghu & Full Chaityavandan rituals',
       'Regular Svadhyaya (scriptural self-study)',
-      'Direct guidance from Sahebji (Ratri Pravachan & Shivir)',
+      'Guidance from Sahebji during Shivirs',
       'Daily Sukruth (practicing one intentional good deed every day)'
     ],
     keyActivitiesHi: [
       'दैनिक चैत्यवंदन साधना',
       'नियमित स्वाध्याय व शास्त्र अध्ययन',
-      'साहिबजी का मार्गदर्शन (रात्रि प्रवचन व शिविर)',
+      'शिविरों में साहिबजी का मार्गदर्शन',
       'दैनिक सुकृत (सद्कर्म संकल्प)'
     ],
     icon: 'Sparkles',

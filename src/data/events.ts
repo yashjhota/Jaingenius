@@ -75,7 +75,7 @@ export const EVENTS_DATA: EventItem[] = [
     entry: 'Free Registration for Jain Genius Members (₹500 for Non-Members, includes stay & Satvik meals)',
     conductor: 'Under the Direct Guidance of P.P. Muniraj Shri Bhuvanbhushanvijayji Maharajsaheb',
     status: 'upcoming',
-    description: 'An intensive 48-hour digital detox and spiritual elevation shivir. Features morning yoga, deep dhyana (meditation), Gardner\'s aptitude workshop, career track introductions, and personal Ratri Pravachan dialogues with Sahebji.',
+    description: 'An intensive 48-hour digital detox and spiritual elevation shivir. Features morning yoga, deep dhyana (meditation), Gardner\'s aptitude workshop, and career track introductions.',
     keyTopics: [
       'Digital Detox: Complete phone-free weekend experience',
       'Gardner Multiple-Intelligence Test & Career Alignment Lab',

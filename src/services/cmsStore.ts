@@ -196,7 +196,7 @@ function saveToStorage<T>(key: string, value: T): void {
   }
 }
 
-function normalizeTestimonialRecord(raw: Partial<TestimonialSlot> & Record<string, unknown>): TestimonialSlot {
+function normalizeTestimonialRecord(raw: Partial<TestimonialSlot>): TestimonialSlot {
   const studentName = String(raw.studentName ?? raw.name ?? raw.label ?? 'Student').trim() || 'Student';
   const experienceText = String(raw.experienceText ?? raw.quote ?? '').trim();
   const cohort = String(raw.cohort ?? raw.yearOrCohort ?? 'Cohort 01').trim() || 'Cohort 01';
@@ -809,8 +809,11 @@ export const CMSStore = {
     notify();
 
     const docPath = 'settings/site_settings';
+    const firestoreUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => value !== undefined)
+    );
     try {
-      await setDoc(doc(db, 'settings', 'site_settings'), updatedSettings, { merge: true });
+      await setDoc(doc(db, 'settings', 'site_settings'), firestoreUpdates, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, docPath);
     }
@@ -818,17 +821,17 @@ export const CMSStore = {
 
   // In-page quick section helpers
   async updateHeroSettings(updates: Partial<SiteSettings>): Promise<void> {
-    await this.updateSiteSettings(updates);
+    await CMSStore.updateSiteSettings(updates);
     logActivity('update', 'settings', 'Updated Hero section content in-place.');
   },
 
   async updateFooterSettings(updates: Partial<SiteSettings>): Promise<void> {
-    await this.updateSiteSettings(updates);
+    await CMSStore.updateSiteSettings(updates);
     logActivity('update', 'settings', 'Updated Footer links and details in-place.');
   },
 
   async updateSocialConfig(updates: Partial<SiteSettings>): Promise<void> {
-    await this.updateSiteSettings(updates);
+    await CMSStore.updateSiteSettings(updates);
     logActivity('update', 'social', 'Updated social channels and handles configuration.');
   },
 
@@ -918,7 +921,7 @@ export const CMSStore = {
     const post = state.socialPosts.find((p) => String(p.id).trim() === strId);
     if (!post) return false;
     const newPinned = !post.isPinned;
-    return this.updateSocialPost(strId, { isPinned: newPinned });
+    return CMSStore.updateSocialPost(strId, { isPinned: newPinned });
   },
 
   async togglePublishSocialPost(id: string): Promise<boolean> {
@@ -926,7 +929,7 @@ export const CMSStore = {
     const post = state.socialPosts.find((p) => String(p.id).trim() === strId);
     if (!post) return false;
     const newPub = !post.isPublished;
-    return this.updateSocialPost(strId, { isPublished: newPub });
+    return CMSStore.updateSocialPost(strId, { isPublished: newPub });
   },
 
   // --- TRASH & RECYCLE BIN OPERATIONS ---
@@ -1156,21 +1159,21 @@ export const CMSStore = {
     id: string | number
   ): Promise<boolean> {
     const strId = String(id);
-    if (module === 'social') return this.deleteSocialPost(strId);
+    if (module === 'social') return CMSStore.deleteSocialPost(strId);
     if (module === 'events') {
-      await this.deleteEvent(strId);
+      await CMSStore.deleteEvent(strId);
       return true;
     }
     if (module === 'gallery') {
-      await this.deleteGalleryItem(strId);
+      await CMSStore.deleteGalleryItem(strId);
       return true;
     }
     if (module === 'news') {
-      await this.deleteNewsArticle(strId);
+      await CMSStore.deleteNewsArticle(strId);
       return true;
     }
     if (module === 'testimonials') {
-      await this.deleteTestimonial(Number(id));
+      await CMSStore.deleteTestimonial(Number(id));
       return true;
     }
     return false;
@@ -1249,9 +1252,9 @@ export const CMSStore = {
   },
 
   async emptyTrash(module?: 'social' | 'events' | 'gallery' | 'news' | 'testimonials'): Promise<number> {
-    const trashList = this.getTrashItems().filter((item) => (!module ? true : item.module === module));
+    const trashList = CMSStore.getTrashItems().filter((item) => (!module ? true : item.module === module));
     for (const item of trashList) {
-      await this.permanentlyDelete(item.module, item.id);
+      await CMSStore.permanentlyDelete(item.module, item.id);
     }
     logActivity('delete', 'system', `Emptied trash (${trashList.length} items permanently removed).`);
     return trashList.length;
@@ -1309,11 +1312,11 @@ export const CMSStore = {
   },
 
   getPublishedSocialPosts(): SocialPost[] {
-    return this.getActiveSocialPosts();
+    return CMSStore.getActiveSocialPosts();
   },
 
   getEventsSorted(statusFilter?: 'upcoming' | 'ongoing' | 'past'): EventItem[] {
-    return this.getActiveEvents(statusFilter);
+    return CMSStore.getActiveEvents(statusFilter);
   },
 
   // --- BACKUP & RESTORE ---

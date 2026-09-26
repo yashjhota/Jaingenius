@@ -182,7 +182,7 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
             </h2>
 
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Real-time highlights from Sunday Youth Shabhās, Sahebji's inspiring ratri pravachan clips, DAC habits in action, and announcements directly curated by our admin desk.
+              Highlights from Sunday Youth Shabhās, DAC habits in action, and community announcements.
             </p>
           </div>
 

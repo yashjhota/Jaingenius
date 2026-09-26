@@ -11,7 +11,6 @@ import { Hero } from './components/home/Hero';
 import { LiveMetrics } from './components/home/LiveMetrics';
 import { PillarsSection } from './components/home/PillarsSection';
 import { TopicsCarousel } from './components/home/TopicsCarousel';
-import { PravachanSpotlight } from './components/home/PravachanSpotlight';
 import { JourneySection } from './components/home/JourneySection';
 import { DacSection } from './components/home/DacSection';
 import { SocialFeedSection } from './components/home/SocialFeedSection';
@@ -146,8 +145,6 @@ export default function App() {
             />
 
             <TopicsCarousel lang={lang} />
-
-            <PravachanSpotlight lang={lang} />
 
             <JourneySection
               lang={lang}

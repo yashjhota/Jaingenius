@@ -180,10 +180,6 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister, on
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#E59A1E]" />
                       {traineesCount} Active Trainees
                     </span>
-                    <span className="flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#E59A1E]" />
-                      Daily Ratri Pravachan
-                    </span>
                   </div>
                 </div>
               </div>

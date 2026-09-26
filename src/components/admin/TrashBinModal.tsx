@@ -59,9 +59,13 @@ export const TrashBinModal: React.FC<TrashBinModalProps> = ({
     if (!deleteTarget) return;
     setProcessingId(deleteTarget.id);
     try {
-      await permanentlyDelete(deleteTarget.module, deleteTarget.id);
+      const deleted = await permanentlyDelete(deleteTarget.module, deleteTarget.id);
+      if (!deleted) throw new Error('The trashed item could not be found.');
       if (onShowToast) onShowToast(`Permanently deleted "${deleteTarget.title.slice(0, 30)}" from cloud database.`);
       setDeleteTarget(null);
+    } catch (error) {
+      console.error('Failed to permanently delete trashed content:', error);
+      if (onShowToast) onShowToast('Could not permanently delete this item. Please try again.');
     } finally {
       setProcessingId(null);
     }
@@ -265,6 +269,7 @@ export const TrashBinModal: React.FC<TrashBinModalProps> = ({
                 {/* Actions: Restore & Permanent Purge */}
                 <div className="flex items-center gap-2 shrink-0">
                   <button
+                    type="button"
                     disabled={processingId === item.id}
                     onClick={() => handleRestore(item)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition-all hover:scale-105 cursor-pointer disabled:opacity-50"
@@ -274,6 +279,7 @@ export const TrashBinModal: React.FC<TrashBinModalProps> = ({
                   </button>
 
                   <button
+                    type="button"
                     disabled={processingId === item.id}
                     onClick={() => handlePermanentDelete(item)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
@@ -294,6 +300,7 @@ export const TrashBinModal: React.FC<TrashBinModalProps> = ({
             Restored items immediately reappear on the live frontend across all visitor browsers.
           </span>
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-colors cursor-pointer"
           >

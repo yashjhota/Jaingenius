@@ -28,7 +28,6 @@ export const MembershipView: React.FC<MembershipViewProps> = ({
     { title: 'Full Access to 8 Career Tracks', desc: 'Complete 60-session mastery tracks across Accounting, GST, Digital Marketing, E-Commerce, etc.' },
     { title: 'Personalized Career Counselling', desc: "Assessment via Gardner's Multiple Intelligences Test and 1-on-1 industry roadmap sessions." },
     { title: 'Shivir & Youth Shabhā Eligibility', desc: 'Reserved admission to residential youth camps and priority seating at Chickpet assemblies.' },
-    { title: 'Daily Ratri Pravachan Archives', desc: 'Direct streaming, downloadable summaries, and access to Sahebji’s exclusive recordings.' },
     { title: 'Internship & Job Placement Support', desc: 'Direct placement referrals to trusted Jain-owned enterprises and professional corporate houses.' },
   ];
 

@@ -37,6 +37,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<SubmissionResult | null>(null);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -57,6 +58,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmissionError(null);
 
     try {
       // 1. Submit to Google Form
@@ -76,21 +78,27 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
           dacAgreed: formData.agreesToDAC ? 'Yes' : 'No',
         },
       });
+      if (!result.success) {
+        throw new Error(result.error || 'Registration submission was not accepted.');
+      }
       setSubmissionResult(result);
 
-      // 2. High-reliability local persistence
-      const stored = JSON.parse(localStorage.getItem('jg_registrations') || '[]');
-      stored.unshift({
-        ...formData,
-        submittedAt: new Date().toISOString(),
-        googleFormStatus: 'submitted',
-      });
-      localStorage.setItem('jg_registrations', JSON.stringify(stored.slice(0, 50)));
+      try {
+        const stored = JSON.parse(localStorage.getItem('jg_registrations') || '[]');
+        stored.unshift({
+          ...formData,
+          submittedAt: new Date().toISOString(),
+          googleFormStatus: 'submitted',
+        });
+        localStorage.setItem('jg_registrations', JSON.stringify(stored.slice(0, 50)));
+      } catch (storageError) {
+        console.warn('Could not cache registration locally:', storageError);
+      }
 
       setSubmitted(true);
     } catch (err) {
       console.warn('Registration submission note:', err);
-      setSubmitted(true);
+      setSubmissionError('We could not send your registration. Please retry or use Open Form to submit directly.');
     } finally {
       setIsSubmitting(false);
     }
@@ -143,7 +151,7 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
               <div className="space-y-2">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold">
                   <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Recorded in Official Google Form</span>
+                  <span>Registration request sent</span>
                 </div>
                 <h4 className="text-2xl font-bold text-[#FAF8F5] font-display">
                   {lang === 'en' ? 'Registration Received!' : 'पंजीकरण प्राप्त हुआ!'}
@@ -353,6 +361,12 @@ export const RegistrationModal: React.FC<RegistrationModalProps> = ({
                   I commit to following the 14-task Daily Activity Card (DAC) under the theme <em>"Refine to Superfine"</em> and participating in youth sessions.
                 </label>
               </div>
+
+              {submissionError && (
+                <p role="alert" className="text-xs text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl px-3 py-2">
+                  {submissionError}
+                </p>
+              )}
 
               {/* Action Buttons */}
               <div className="pt-3 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10">

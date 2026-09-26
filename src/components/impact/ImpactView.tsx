@@ -226,7 +226,7 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
                   Gaurav — Admissions Lead
                 </h4>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  "Watching youth transform their sleep cycle to 5:45 AM, master GST and Accounting, and attend Ratri Pravachan with clarity proves the power of our structured ecosystem."
+                  "Watching youth build disciplined routines and develop practical career skills shows the value of a structured learning environment."
                 </p>
               </div>
 

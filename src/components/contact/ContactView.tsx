@@ -185,7 +185,6 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
                 <span className="font-semibold text-[#0C1B2A] block">Assembly Timings:</span>
                 <span>• Sunday Youth Shabhās: 2:15 PM – 4:00 PM</span><br />
-                <span>• Daily Ratri Pravachan: Broadcasted every evening online & at venue</span>
               </div>
             </div>
 
@@ -196,7 +195,7 @@ export const ContactView: React.FC<ContactViewProps> = ({ lang, onNavigate, onOp
                 <span>Jain G Community Group</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Stay updated on weekly session schedules, daily pravachan links, and youth volunteering drives.
+                Stay updated on weekly session schedules and youth volunteering opportunities.
               </p>
               <a
                 href={whatsappGroupUrl}

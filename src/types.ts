@@ -42,21 +42,6 @@ export interface TopicItem {
   description: string;
 }
 
-export interface PravachanItem {
-  id: string;
-  title: string;
-  titleHi: string;
-  date: string;
-  speaker: string;
-  type: 'Ratri Pravachan' | 'Youth Session' | 'Special Discourse';
-  duration: string;
-  videoUrl?: string;
-  audioUrl?: string;
-  summaryPoints: string[];
-  fullTranscriptExcerpt?: string;
-  isToday?: boolean;
-}
-
 export interface MemberJourneyStep {
   step: number;
   stage: string;

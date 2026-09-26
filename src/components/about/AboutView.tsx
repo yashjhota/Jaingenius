@@ -127,25 +127,9 @@ export const AboutView: React.FC<AboutViewProps> = ({ lang, onNavigate, onOpenRe
               {SITE_CONFIG.initiativeOf}
             </h3>
             <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed pt-2">
-              Every day, Sahebji delivers the Ratri Pravachan, guiding the youth through internal moral dilemmas,
-              relationship challenges, emotional clarity, and spiritual fortitude. His vision is the guiding light
-              behind the Daily Activity Card and all career tracks.
+              Sahebji's guidance inspires Jain Genius's spiritual foundation and its commitment to values-led youth
+              development.
             </p>
-          </div>
-
-          <div className="pt-2">
-            <button
-              onClick={() => {
-                onNavigate('home');
-                setTimeout(() => {
-                  document.getElementById('daily-pravachan')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
-              }}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-[#FAF8F5] transition-all"
-            >
-              <span>Listen to Daily Ratri Pravachan</span>
-              <Sparkles className="w-4 h-4 text-[#E59A1E]" />
-            </button>
           </div>
         </div>
       </section>

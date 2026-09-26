@@ -55,14 +55,6 @@ export const NEWS_ANNOUNCEMENTS: NewsItem[] = [
     readTime: '3 min read'
   },
   {
-    id: 'news-2',
-    title: 'Overcoming the Modern Epidemic of Doomscrolling: Lessons from Ratri Pravachan',
-    date: 'August 29, 2026',
-    category: 'Jain Philosophy',
-    summary: 'A deep dive into Sahebji\'s guidance on reclaiming youth attention from algorithmic addiction through the Daily Activity Card (DAC) system.',
-    readTime: '4 min read'
-  },
-  {
     id: 'news-3',
     title: 'Registration Open for Upcoming Residential Youth Shivir',
     date: 'August 18, 2026',

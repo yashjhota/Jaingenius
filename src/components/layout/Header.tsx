@@ -121,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Desktop Navigation */}
           <nav
             aria-label="Main Navigation"
-            className="hidden xl:flex items-center gap-1.5"
+            className="hidden xl:flex items-center gap-1"
           >
             {NAV_ITEMS.map((item) => {
               const isActive = currentPage === item.id;
@@ -129,7 +129,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleNavClick(item.id as PageId)}
-                  className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-all ${
+                  className={`px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-all ${
                     isActive
                       ? 'text-[#F3A628] bg-white/10 shadow-sm font-semibold'
                       : 'text-slate-200 hover:text-white hover:bg-white/5'
@@ -142,7 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
 
           {/* Desktop Actions & CTA */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden xl:flex items-center gap-2">
             {/* Admin Portal button */}
             <button
               onClick={() => handleNavClick('admin')}
@@ -195,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Mobile Right Controls */}
-          <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
+          <div className="flex xl:hidden items-center gap-1.5 sm:gap-2">
             {/* Quick Lang Switch on mobile */}
             <button
               onClick={onToggleLang}
@@ -210,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
               href={SITE_CONFIG.memberPortalUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded text-xs font-semibold text-white bg-[#162B42] hover:bg-[#1E3958] border border-[#E59A1E]/40 flex items-center gap-1 transition-colors"
+              className="hidden sm:flex px-2.5 py-1 rounded text-xs font-semibold text-white bg-[#162B42] hover:bg-[#1E3958] border border-[#E59A1E]/40 items-center gap-1 transition-colors"
               title="Member Login"
             >
               <span>Login</span>

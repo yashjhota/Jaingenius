@@ -15,6 +15,8 @@ export type TestCategory =
 
 export type TestStatus = 'idle' | 'running' | 'passed' | 'failed' | 'skipped';
 
+export const TEST_CASE_COUNT = 20;
+
 export interface TestCaseResult {
   id: string;
   name: string;
