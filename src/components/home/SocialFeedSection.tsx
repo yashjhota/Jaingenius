@@ -19,6 +19,9 @@ import {
   User,
   Clock,
   Radio,
+  Edit3,
+  Trash2,
+  Plus,
 } from 'lucide-react';
 
 interface SocialFeedSectionProps {
@@ -27,6 +30,10 @@ interface SocialFeedSectionProps {
   className?: string;
   maxItems?: number;
   showHeaderAction?: boolean;
+  onOpenEditPost?: (post: SocialPost) => void;
+  onOpenAddPost?: () => void;
+  onOpenEditSocials?: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
 const PLATFORM_META: Record<
@@ -104,8 +111,19 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
   className = '',
   maxItems,
   showHeaderAction = true,
+  onOpenEditPost,
+  onOpenAddPost,
+  onOpenEditSocials,
+  onShowToast,
 }) => {
-  const { socialPosts, settings } = useCMS();
+  const {
+    socialPosts,
+    settings,
+    isLiveEditMode,
+    isAuthenticated,
+    moveToTrash,
+    togglePinSocialPost,
+  } = useCMS();
   const [activePlatform, setActivePlatform] = useState<string>('all');
   const [activeVideoPost, setActiveVideoPost] = useState<SocialPost | null>(null);
 
@@ -117,9 +135,9 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
     settings.whatsappCommunityUrl || settings.whatsappGroupUrl || SITE_CONFIG.social.whatsappCommunity;
   const telegramUrl = settings.telegramUrl || SITE_CONFIG.social.telegram;
 
-  // Only show published posts, sorted pinned first, then newest
+  // Only show active (non-deleted) published posts, sorted pinned first, then newest
   const publishedPosts = socialPosts
-    .filter((p) => p.isPublished !== false)
+    .filter((p) => p.isPublished !== false && !p.isDeleted)
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
@@ -221,11 +239,30 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
             {showHeaderAction && onNavigate && (
               <button
                 onClick={() => onNavigate('news')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0C1B2A] text-white hover:bg-[#162E4A] text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0C1B2A] text-white hover:bg-[#162E4A] text-xs font-semibold transition-colors cursor-pointer"
               >
                 <span>All News</span>
                 <ArrowRight className="w-3 h-3 text-[#F3A628]" />
               </button>
+            )}
+
+            {isLiveEditMode && isAuthenticated && (
+              <div className="flex items-center gap-2 pl-1 border-l border-slate-300">
+                <button
+                  onClick={onOpenAddPost}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#E59A1E] hover:bg-[#F3A628] text-[#0C1B2A] text-xs font-bold transition-all shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>+ Add Post</span>
+                </button>
+                <button
+                  onClick={onOpenEditSocials}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#162E4A] hover:bg-[#1E3E64] border border-[#E59A1E]/30 text-[#F3A628] text-xs font-bold transition-all shadow-sm cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Channels</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -285,6 +322,28 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* In-Grid Live Add Social Post Tile */}
+            {isLiveEditMode && isAuthenticated && (
+              <button
+                onClick={onOpenAddPost}
+                className="h-full min-h-[300px] p-6 rounded-3xl border-2 border-dashed border-[#E59A1E]/50 hover:border-[#E59A1E] bg-[#E59A1E]/5 hover:bg-[#E59A1E]/10 flex flex-col items-center justify-center text-center gap-3 transition-all hover:scale-[1.01] cursor-pointer group"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-[#E59A1E]/20 text-[#E59A1E] flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-base text-[#0C1B2A]">Add Social Media Post</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-[220px]">
+                    Publish an Instagram reel, YouTube talk, or announcement card to the feed.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#E59A1E] text-[#0C1B2A] text-xs font-bold shadow-sm">
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>New Social Post</span>
+                </span>
+              </button>
+            )}
+
             {displayedPosts.map((post) => {
               const meta = PLATFORM_META[post.platform] || PLATFORM_META.instagram;
               const hasVideo =
@@ -299,6 +358,45 @@ export const SocialFeedSection: React.FC<SocialFeedSectionProps> = ({
                       : 'border-slate-200/90 shadow-xs hover:border-[#E59A1E]/50'
                   }`}
                 >
+                  {/* Admin In-Page Live Action Ribbon */}
+                  {isLiveEditMode && isAuthenticated && (
+                    <div className="bg-[#0C1B2A] text-white px-3 py-1.5 flex items-center justify-between text-[11px] border-b border-[#E59A1E]/30 z-20">
+                      <span className="text-[#F3A628] font-bold flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-[#E59A1E]" />
+                        <span>Live Admin</span>
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => togglePinSocialPost(post.id)}
+                          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors cursor-pointer ${
+                            post.isPinned ? 'bg-amber-500 text-black font-bold' : 'bg-white/10 hover:bg-white/20 text-white'
+                          }`}
+                          title={post.isPinned ? 'Unpin post' : 'Pin to top of feed'}
+                        >
+                          {post.isPinned ? 'Pinned' : 'Pin'}
+                        </button>
+                        <button
+                          onClick={() => onOpenEditPost?.(post)}
+                          className="px-2 py-0.5 rounded bg-white/10 hover:bg-[#E59A1E] hover:text-[#0C1B2A] text-[10px] font-semibold transition-colors cursor-pointer"
+                          title="Edit caption, link or image"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await moveToTrash('social', post.id);
+                            onShowToast?.('Post moved to Trash and hidden from public view.');
+                          }}
+                          className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-0.5"
+                          title="Instantly remove and move to Trash"
+                        >
+                          <Trash2 className="w-2.5 h-2.5" />
+                          <span>Trash</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Top Bar inside card */}
                   <div className="p-4 sm:p-5 pb-3 flex items-center justify-between gap-3 border-b border-slate-100">
                     <div className="flex items-center gap-2 min-w-0">

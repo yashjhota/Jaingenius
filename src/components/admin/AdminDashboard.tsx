@@ -8,6 +8,7 @@ import { TestimonialsManager } from './TestimonialsManager';
 import { SiteSettingsManager } from './SiteSettingsManager';
 import { SocialFeedManager } from './SocialFeedManager';
 import { TestingManager } from './TestingManager';
+import { TrashManager } from './TrashManager';
 import { Logo } from '../common/Logo';
 import {
   ShieldCheck,
@@ -29,6 +30,8 @@ import {
   AlertCircle,
   FileCheck,
   Share2,
+  Trash2,
+  Edit3,
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -50,12 +53,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
     logout,
     firebaseSyncStatus,
     lastSyncedAt,
+    getTrashItems,
+    isLiveEditMode,
+    setLiveEditMode,
   } = useCMS();
 
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'events' | 'gallery' | 'news' | 'social' | 'testimonials' | 'settings' | 'testing'
+    'overview' | 'events' | 'gallery' | 'news' | 'social' | 'testimonials' | 'settings' | 'testing' | 'trash'
   >('overview');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -204,8 +210,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
 
           <div className="flex items-center gap-3 text-xs">
             <button
+              onClick={() => {
+                setLiveEditMode(true);
+                onNavigate('home');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E59A1E] hover:bg-[#F3A628] text-[#0C1B2A] font-bold transition-all shadow-xs cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Live Edit Website</span>
+            </button>
+
+            <button
               onClick={() => onNavigate('home')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 transition-colors font-medium"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 transition-colors font-medium cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5 text-[#E59A1E]" />
               <span className="hidden sm:inline">View Public Website</span>
@@ -214,7 +231,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
 
             <button
               onClick={logout}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors font-medium"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors font-medium cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Logout</span>
@@ -318,6 +335,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>QA Testing & Diagnostics</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('trash')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition-colors ${
+              activeTab === 'trash'
+                ? 'bg-red-600 text-white font-bold shadow-xs'
+                : 'text-slate-300 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            <span>Trash Bin ({getTrashItems().length})</span>
           </button>
         </div>
       </header>
@@ -659,6 +688,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
         {/* Tab 7: QA Testing Suite & Diagnostic Lab */}
         {activeTab === 'testing' && (
           <TestingManager showToast={showToast} />
+        )}
+
+        {/* Tab 8: Trash & Recovery Bin */}
+        {activeTab === 'trash' && (
+          <TrashManager showToast={showToast} />
         )}
       </main>
     </div>

@@ -115,6 +115,9 @@ export interface EventItem {
   posterImage?: string;
   recap?: string;
   createdAt?: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string;
 }
 
 export interface TestimonialSlot {
@@ -128,6 +131,9 @@ export interface TestimonialSlot {
   avatarUrl?: string;
   cohort?: string;
   createdAt?: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string;
 }
 
 export interface GalleryItem {
@@ -140,6 +146,9 @@ export interface GalleryItem {
   type?: 'image' | 'video';
   event?: string;
   createdAt?: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string;
 }
 
 export interface NewsItem {
@@ -163,6 +172,9 @@ export interface NewsArticle {
   imageUrl?: string;
   featured?: boolean;
   createdAt?: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string;
 }
 
 export interface SiteSettings {
@@ -183,6 +195,14 @@ export interface SiteSettings {
   tagline: string;
   subTagline: string;
   initiativeOf: string;
+  // Hero section live customization fields
+  heroTitle?: string;
+  heroHighlightWord?: string;
+  heroDescription?: string;
+  heroBadgeText?: string;
+  heroTargetAge?: string;
+  heroPrimaryBtnText?: string;
+  heroSecondaryBtnText?: string;
   // Social media handles & URLs for public viewing
   instagramUrl: string;
   instagramHandle: string;
@@ -223,6 +243,9 @@ export interface SocialPost {
   isPinned?: boolean;
   isPublished?: boolean;
   createdAt?: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string;
 }
 
 export interface AdminActivityLog {
@@ -240,3 +263,14 @@ export interface FAQItem {
   answerHi: string;
   category: string;
 }
+
+export interface TrashItem {
+  id: string;
+  module: 'social' | 'events' | 'gallery' | 'news' | 'testimonials';
+  title: string;
+  subtitle?: string;
+  deletedAt: string;
+  platform?: SocialPlatform;
+  originalData: any;
+}
+

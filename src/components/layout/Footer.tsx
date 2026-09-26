@@ -16,17 +16,24 @@ import {
   Youtube,
   Send,
   Twitter,
+  Edit3,
 } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (page: PageId) => void;
   lang: Language;
   onOpenRegister: () => void;
+  onOpenQuickEdit?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate, lang, onOpenRegister }) => {
+export const Footer: React.FC<FooterProps> = ({
+  onNavigate,
+  lang,
+  onOpenRegister,
+  onOpenQuickEdit,
+}) => {
   const t = TRANSLATIONS[lang];
-  const { settings } = useCMS();
+  const { settings, isLiveEditMode, isAuthenticated } = useCMS();
 
   // Dynamically resolve values from live CMS database settings or fallback to siteConfig
   const initiativeOf = settings.initiativeOf || SITE_CONFIG.initiativeOf;
@@ -51,7 +58,25 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, lang, onOpenRegister
   const designerUrl = settings.designerCreditUrl || 'https://www.instagram.com/yashjhota';
 
   return (
-    <footer id="main-footer" className="bg-[#081320] text-slate-300 pt-16 pb-12 border-t border-[#E59A1E]/30 relative overflow-hidden">
+    <footer
+      id="main-footer"
+      className={`bg-[#081320] text-slate-300 pt-16 pb-12 border-t border-[#E59A1E]/30 relative overflow-hidden ${
+        isLiveEditMode && isAuthenticated ? 'ring-2 ring-inset ring-[#E59A1E]/50' : ''
+      }`}
+    >
+      {/* In-Page Live Edit Button for Footer */}
+      {isLiveEditMode && isAuthenticated && (
+        <div className="absolute top-4 right-4 z-20">
+          <button
+            onClick={onOpenQuickEdit}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#E59A1E] hover:bg-[#F3A628] text-[#0C1B2A] font-bold text-xs shadow-xl transition-all hover:scale-105 cursor-pointer ring-2 ring-black/40"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Edit Footer & Contacts</span>
+          </button>
+        </div>
+      )}
+
       {/* Subtle background glow element */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-24 bg-[#E59A1E]/5 blur-3xl pointer-events-none" />
 

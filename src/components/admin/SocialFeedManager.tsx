@@ -3,6 +3,7 @@ import { SocialPost, SocialPlatform, PageId } from '../../types';
 import { useCMS } from '../../services/cmsStore';
 import { SITE_CONFIG } from '../../data/siteConfig';
 import { ImageUploadField } from './ImageUploadField';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   Share2,
   Plus,
@@ -29,6 +30,9 @@ import {
   Calendar,
   User,
   Flame,
+  Archive,
+  RotateCcw,
+  AlertCircle,
 } from 'lucide-react';
 
 interface SocialFeedManagerProps {
@@ -111,15 +115,32 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
     addSocialPost,
     updateSocialPost,
     deleteSocialPost,
+    moveToTrash,
+    restoreFromTrash,
     togglePinSocialPost,
     togglePublishSocialPost,
   } = useCMS();
 
+  const [statusTab, setStatusTab] = useState<'active' | 'trash'>('active');
   const [platformFilter, setPlatformFilter] = useState<string>('All');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [previewPost, setPreviewPost] = useState<SocialPost | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // In-app Delete & Trash Confirmation Modal State (replaces blocked window.confirm)
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    post: SocialPost | null;
+    isProcessing: boolean;
+    mode: 'trash_or_permanent' | 'permanent_only';
+  }>({
+    isOpen: false,
+    post: null,
+    isProcessing: false,
+    mode: 'trash_or_permanent',
+  });
 
   const initialForm: Omit<SocialPost, 'id'> = {
     platform: 'instagram',
@@ -139,7 +160,13 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
   const [formData, setFormData] = useState<Omit<SocialPost, 'id'>>(initialForm);
   const [tagsInput, setTagsInput] = useState('');
 
-  const filteredPosts = socialPosts.filter((post) => {
+  // Active vs Trashed counts
+  const activePosts = socialPosts.filter((p) => !p.isDeleted);
+  const trashedPosts = socialPosts.filter((p) => !!p.isDeleted);
+
+  const baseList = statusTab === 'active' ? activePosts : trashedPosts;
+
+  const filteredPosts = baseList.filter((post) => {
     const matchesPlatform =
       platformFilter === 'All' || post.platform === platformFilter;
     const matchesSearch =
@@ -155,6 +182,7 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
     setEditingPostId(null);
     setFormData(initialForm);
     setTagsInput('#JainGenius, #YouthEmpowerment');
+    setFormError(null);
     setIsModalOpen(true);
   };
 
@@ -175,6 +203,7 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
       isPublished: post.isPublished !== false,
     });
     setTagsInput(post.tags ? post.tags.join(', ') : '');
+    setFormError(null);
     setIsModalOpen(true);
   };
 
@@ -207,14 +236,16 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
     if (!formData.caption.trim()) {
-      alert('Post caption or headline is required.');
+      setFormError('Post caption or headline is required.');
       return;
     }
     if (!formData.postUrl.trim()) {
-      alert('Post URL or link is required.');
+      setFormError('Post URL or link is required.');
       return;
     }
 
@@ -230,25 +261,55 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
     };
 
     if (editingPostId) {
-      updateSocialPost(editingPostId, postPayload);
-      showToast('Social post successfully updated!');
+      await updateSocialPost(editingPostId, postPayload);
+      showToast('Social post successfully updated in Cloud database!');
     } else {
-      addSocialPost(postPayload);
+      await addSocialPost(postPayload);
       showToast('New social media post published to live feed!');
     }
 
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string, caption: string) => {
-    if (confirm(`Remove this social post from public feed?\n"${caption.substring(0, 50)}..."`)) {
-      deleteSocialPost(id);
-      showToast('Social media post removed.');
+  // Open in-app dialog for moving to trash or deleting permanently
+  const handleOpenDelete = (post: SocialPost, mode: 'trash_or_permanent' | 'permanent_only' = 'trash_or_permanent') => {
+    setDeleteDialog({
+      isOpen: true,
+      post,
+      isProcessing: false,
+      mode,
+    });
+  };
+
+  const handleConfirmMoveToTrash = async () => {
+    if (!deleteDialog.post) return;
+    setDeleteDialog((prev) => ({ ...prev, isProcessing: true }));
+    try {
+      await moveToTrash('social', deleteDialog.post.id);
+      showToast(`Post moved to Trash. It is hidden from public view and can be restored anytime.`);
+    } finally {
+      setDeleteDialog({ isOpen: false, post: null, isProcessing: false, mode: 'trash_or_permanent' });
     }
   };
 
-  const pinnedCount = socialPosts.filter((p) => p.isPinned).length;
-  const publishedCount = socialPosts.filter((p) => p.isPublished !== false).length;
+  const handleConfirmPermanentDelete = async () => {
+    if (!deleteDialog.post) return;
+    setDeleteDialog((prev) => ({ ...prev, isProcessing: true }));
+    try {
+      await deleteSocialPost(deleteDialog.post.id);
+      showToast(`Post permanently erased from Cloud Firestore.`);
+    } finally {
+      setDeleteDialog({ isOpen: false, post: null, isProcessing: false, mode: 'trash_or_permanent' });
+    }
+  };
+
+  const handleRestore = async (post: SocialPost) => {
+    await restoreFromTrash('social', post.id);
+    showToast(`Restored "${post.caption.slice(0, 30)}..." to live public feed!`);
+  };
+
+  const pinnedCount = activePosts.filter((p) => p.isPinned).length;
+  const publishedCount = activePosts.filter((p) => p.isPublished !== false).length;
 
   return (
     <div className="space-y-6">
@@ -332,6 +393,46 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
         </div>
       </div>
 
+      {/* Active vs Trash Tab Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setStatusTab('active')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              statusTab === 'active'
+                ? 'bg-[#E59A1E] text-[#0C1B2A] shadow-md shadow-[#E59A1E]/10'
+                : 'bg-white/5 hover:bg-white/10 text-slate-300'
+            }`}
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>Active Feed ({activePosts.length})</span>
+          </button>
+
+          <button
+            onClick={() => setStatusTab('trash')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              statusTab === 'trash'
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/10'
+                : 'bg-white/5 hover:bg-white/10 text-slate-300'
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            <span>Trash Bin ({trashedPosts.length})</span>
+          </button>
+        </div>
+
+        {statusTab === 'trash' ? (
+          <p className="text-[11px] text-rose-300 flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+            <span>These posts are hidden from visitors. You can restore them or permanently delete them.</span>
+          </p>
+        ) : (
+          <div className="text-[11px] text-slate-400 hidden sm:block">
+            <span>Click the trash icon on any card to remove it from public view.</span>
+          </div>
+        )}
+      </div>
+
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0C1B2A] p-3.5 rounded-xl border border-white/10">
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 sm:pb-0">
@@ -380,19 +481,25 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
       {filteredPosts.length === 0 ? (
         <div className="bg-[#0C1B2A] border border-white/10 rounded-2xl p-12 text-center text-slate-400">
           <Share2 className="w-10 h-10 mx-auto text-slate-500 mb-3 opacity-60" />
-          <h3 className="text-base font-bold text-white mb-1">No Social Posts Found</h3>
+          <h3 className="text-base font-bold text-white mb-1">
+            {statusTab === 'trash' ? 'Trash Bin is Empty' : 'No Social Posts Found'}
+          </h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto mb-4">
-            {search || platformFilter !== 'All'
+            {statusTab === 'trash'
+              ? 'No trashed social posts currently stored.'
+              : search || platformFilter !== 'All'
               ? 'Try changing your filter criteria or search query.'
               : 'Add your first social media link or post embed to display real-time updates.'}
           </p>
-          <button
-            onClick={handleOpenCreate}
-            className="px-4 py-2 rounded-xl bg-[#E59A1E] text-[#0C1B2A] text-xs font-bold inline-flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Social Post Now</span>
-          </button>
+          {statusTab === 'active' && (
+            <button
+              onClick={handleOpenCreate}
+              className="px-4 py-2 rounded-xl bg-[#E59A1E] text-[#0C1B2A] text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Social Post Now</span>
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -404,10 +511,12 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
               <div
                 key={post.id}
                 className={`bg-[#0C1B2A] border rounded-2xl overflow-hidden flex flex-col justify-between transition-all hover:border-[#E59A1E]/50 ${
-                  post.isPinned
+                  post.isDeleted
+                    ? 'border-rose-500/40 opacity-80'
+                    : post.isPinned
                     ? 'border-[#E59A1E] ring-1 ring-[#E59A1E]/30 shadow-lg shadow-[#E59A1E]/5'
                     : 'border-white/10'
-                } ${!isPublished ? 'opacity-60 bg-[#081320]' : ''}`}
+                } ${!isPublished && !post.isDeleted ? 'opacity-60 bg-[#081320]' : ''}`}
               >
                 {/* Header of card */}
                 <div className="p-4 border-b border-white/5 space-y-3">
@@ -422,13 +531,19 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
 
                     {/* Quick status chips */}
                     <div className="flex items-center gap-1.5">
-                      {post.isPinned && (
+                      {post.isDeleted && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
+                          <Archive className="w-2.5 h-2.5" />
+                          <span>In Trash</span>
+                        </span>
+                      )}
+                      {!post.isDeleted && post.isPinned && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#E59A1E]/20 text-[#F3A628] border border-[#E59A1E]/40 text-[10px] font-bold">
                           <Pin className="w-2.5 h-2.5 fill-current" />
                           <span>Pinned</span>
                         </span>
                       )}
-                      {!isPublished && (
+                      {!post.isDeleted && !isPublished && (
                         <span className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold">
                           Draft (Hidden)
                         </span>
@@ -494,59 +609,100 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
 
                 {/* Card Action Bar */}
                 <div className="p-3 bg-[#081320]/80 border-t border-white/5 flex items-center justify-between gap-1 text-xs">
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => togglePinSocialPost(post.id)}
-                      title={post.isPinned ? 'Unpin post' : 'Pin to top of feed'}
-                      className={`p-1.5 rounded-lg border transition-colors ${
-                        post.isPinned
-                          ? 'bg-[#E59A1E]/20 text-[#F3A628] border-[#E59A1E]/40'
-                          : 'text-slate-400 hover:text-white border-white/10 hover:bg-white/5'
-                      }`}
-                    >
-                      <Pin className="w-3.5 h-3.5" />
-                    </button>
+                  {post.isDeleted ? (
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <span className="text-[11px] text-rose-300 font-semibold flex items-center gap-1">
+                        <Archive className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Trashed</span>
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleRestore(post)}
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 hover:text-white transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                          title="Restore to live public feed"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Restore</span>
+                        </button>
+                        <button
+                          onClick={() => handleOpenDelete(post, 'permanent_only')}
+                          className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-600 border border-rose-500/40 text-rose-300 hover:text-white transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                          title="Erase forever from database"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Delete Forever</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => togglePinSocialPost(post.id)}
+                          title={post.isPinned ? 'Unpin post' : 'Pin to top of feed'}
+                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                            post.isPinned
+                              ? 'bg-[#E59A1E]/20 text-[#F3A628] border-[#E59A1E]/40'
+                              : 'text-slate-400 hover:text-white border-white/10 hover:bg-white/5'
+                          }`}
+                        >
+                          <Pin className="w-3.5 h-3.5" />
+                        </button>
 
-                    <button
-                      onClick={() => togglePublishSocialPost(post.id)}
-                      title={isPublished ? 'Hide from public feed' : 'Publish to live feed'}
-                      className={`p-1.5 rounded-lg border transition-colors ${
-                        isPublished
-                          ? 'text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10'
-                          : 'text-rose-400 border-rose-500/30 hover:bg-rose-500/10'
-                      }`}
-                    >
-                      {isPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                    </button>
+                        <button
+                          onClick={() => togglePublishSocialPost(post.id)}
+                          title={isPublished ? 'Hide from public feed' : 'Publish to live feed'}
+                          className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                            isPublished
+                              ? 'text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10'
+                              : 'text-rose-400 border-rose-500/30 hover:bg-rose-500/10'
+                          }`}
+                        >
+                          {isPublished ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </button>
 
-                    <a
-                      href={post.postUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Open source post link"
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-[#F3A628] border border-white/10 hover:bg-white/5 transition-colors"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
+                        <a
+                          href={post.postUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Open source post link"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-[#F3A628] border border-white/10 hover:bg-white/5 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleOpenEdit(post)}
-                      className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 hover:text-white transition-colors flex items-center gap-1 text-[11px] font-medium"
-                    >
-                      <Edit3 className="w-3 h-3 text-[#F3A628]" />
-                      <span>Edit</span>
-                    </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleOpenEdit(post)}
+                          className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 hover:text-white transition-colors flex items-center gap-1 text-[11px] font-medium cursor-pointer"
+                        >
+                          <Edit3 className="w-3 h-3 text-[#F3A628]" />
+                          <span>Edit</span>
+                        </button>
 
-                    <button
-                      onClick={() => handleDelete(post.id, post.caption)}
-                      className="p-1.5 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition-colors"
-                      title="Delete post"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                        <button
+                          onClick={async () => {
+                            await moveToTrash('social', post.id);
+                            showToast(`"${post.platform.toUpperCase()}" post moved to Trash. Hidden from public site.`);
+                          }}
+                          className="px-2 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:text-white transition-colors flex items-center gap-1 text-[11px] font-medium cursor-pointer"
+                          title="Move to Trash (instantly removes from website)"
+                        >
+                          <Archive className="w-3 h-3" />
+                          <span>Trash</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenDelete(post, 'trash_or_permanent')}
+                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-200 hover:bg-rose-500/20 border border-rose-500/30 transition-colors cursor-pointer"
+                          title="Delete post or purge from database"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -815,6 +971,52 @@ export const SocialFeedManager: React.FC<SocialFeedManagerProps> = ({
           </div>
         </div>
       )}
+
+      {/* In-App Confirmation Dialog for Trashing or Permanently Deleting Posts */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        title={
+          deleteDialog.mode === 'trash_or_permanent'
+            ? `Delete or Trash ${deleteDialog.post?.platform ? deleteDialog.post.platform.toUpperCase() : 'Social'} Post?`
+            : `Permanently Erase ${deleteDialog.post?.platform ? deleteDialog.post.platform.toUpperCase() : 'Social'} Post?`
+        }
+        message={
+          deleteDialog.mode === 'trash_or_permanent'
+            ? 'Choose whether to move this post to the Trash Bin (it will be immediately hidden from the live website and can be restored at any time), or permanently erase it from Cloud Firestore.'
+            : 'Are you sure you want to permanently erase this post from Cloud Firestore? This action cannot be undone.'
+        }
+        itemTitle={
+          deleteDialog.post
+            ? `[${deleteDialog.post.platform.toUpperCase()}] ${deleteDialog.post.caption}`
+            : undefined
+        }
+        confirmLabel={
+          deleteDialog.mode === 'trash_or_permanent'
+            ? 'Delete Permanently'
+            : 'Erase Forever'
+        }
+        confirmVariant="danger"
+        secondaryActionLabel={
+          deleteDialog.mode === 'trash_or_permanent'
+            ? 'Move to Trash (Hidden from website)'
+            : undefined
+        }
+        onSecondaryAction={
+          deleteDialog.mode === 'trash_or_permanent'
+            ? handleConfirmMoveToTrash
+            : undefined
+        }
+        onConfirm={handleConfirmPermanentDelete}
+        onCancel={() =>
+          setDeleteDialog({
+            isOpen: false,
+            post: null,
+            isProcessing: false,
+            mode: 'trash_or_permanent',
+          })
+        }
+        isProcessing={deleteDialog.isProcessing}
+      />
     </div>
   );
 };

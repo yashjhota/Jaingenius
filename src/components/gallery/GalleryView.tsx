@@ -1,25 +1,48 @@
 import React, { useState } from 'react';
 import { useCMS } from '../../services/cmsStore';
 import { GalleryItem, Language, PageId } from '../../types';
-import { Sparkles, Image, Video, Calendar, MapPin, X, Filter, Camera, Settings } from 'lucide-react';
+import {
+  Sparkles,
+  Image,
+  Video,
+  Calendar,
+  MapPin,
+  X,
+  Filter,
+  Camera,
+  Settings,
+  Edit3,
+  Trash2,
+  Plus,
+} from 'lucide-react';
 import { CTASection } from '../layout/CTASection';
 
 interface GalleryViewProps {
   lang: Language;
   onNavigate: (page: PageId) => void;
   onOpenRegister: () => void;
+  onOpenEditGallery?: (item: GalleryItem) => void;
+  onOpenAddGallery?: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
-export const GalleryView: React.FC<GalleryViewProps> = ({ lang, onNavigate, onOpenRegister }) => {
-  const { gallery } = useCMS();
+export const GalleryView: React.FC<GalleryViewProps> = ({
+  lang,
+  onNavigate,
+  onOpenRegister,
+  onOpenEditGallery,
+  onOpenAddGallery,
+  onShowToast,
+}) => {
+  const { gallery, isAuthenticated, isLiveEditMode, moveToTrash } = useCMS();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [activeMedia, setActiveMedia] = useState<GalleryItem | null>(null);
 
   const categories = ['All', 'Youth Session', 'Discourse', 'Workshop', 'Shivir'];
 
-  const filteredItems = selectedCategory === 'All'
-    ? gallery
-    : gallery.filter((item) => item.category === selectedCategory);
+  const filteredItems = gallery
+    .filter((item) => !item.isDeleted)
+    .filter((item) => (selectedCategory === 'All' ? true : item.category === selectedCategory));
 
   return (
     <div className="bg-[#FAF8F5] text-[#0C1B2A] min-h-screen">
@@ -64,13 +87,23 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ lang, onNavigate, onOp
             ))}
           </div>
 
-          <div className="flex justify-end sm:justify-auto">
+          <div className="flex items-center gap-2 justify-end sm:justify-auto">
+            {isLiveEditMode && isAuthenticated && (
+              <button
+                onClick={onOpenAddGallery}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E59A1E] hover:bg-[#F3A628] text-[#0C1B2A] text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Photo</span>
+              </button>
+            )}
+
             <button
               onClick={() => onNavigate('admin')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[#B8780E] text-xs font-semibold shrink-0 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[#B8780E] text-xs font-semibold shrink-0 transition-colors cursor-pointer"
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>Upload Photo</span>
+              <span>Admin Manage</span>
             </button>
           </div>
         </div>
@@ -82,9 +115,39 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ lang, onNavigate, onOp
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              onClick={() => setActiveMedia(item)}
-              className="group bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+              className="group bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
             >
+              {/* Admin Live Action Ribbon */}
+              {isLiveEditMode && isAuthenticated && (
+                <div className="bg-[#0C1B2A] text-white px-3 py-1.5 flex items-center justify-between text-[11px] border-b border-[#E59A1E]/30 z-20">
+                  <span className="text-[#F3A628] font-bold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#E59A1E]" />
+                    <span>Live Photo</span>
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenEditGallery?.(item);
+                      }}
+                      className="px-2 py-0.5 rounded bg-white/10 hover:bg-[#E59A1E] hover:text-[#0C1B2A] text-[10px] font-semibold transition-colors cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await moveToTrash('gallery', item.id);
+                        onShowToast?.(`Photo "${item.title}" moved to Trash.`);
+                      }}
+                      className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-0.5"
+                    >
+                      <Trash2 className="w-2.5 h-2.5" />
+                      <span>Trash</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* Media Card Preview */}
               <div className="relative aspect-video bg-gradient-to-br from-[#0C1B2A] to-[#162E4A] overflow-hidden">
                 {item.url ? (

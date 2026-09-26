@@ -7,6 +7,7 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
+  getDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
@@ -18,6 +19,7 @@ import {
   SiteSettings,
   AdminActivityLog,
   SocialPost,
+  TrashItem,
   PageId,
 } from '../types';
 import { EVENTS_DATA } from '../data/events';
@@ -109,6 +111,14 @@ export const INITIAL_SITE_SETTINGS: SiteSettings = {
   tagline: SITE_CONFIG.tagline,
   subTagline: SITE_CONFIG.subTagline,
   initiativeOf: SITE_CONFIG.initiativeOf,
+  heroTitle: 'Jain Genius',
+  heroHighlightWord: 'The Change Makers',
+  heroDescription:
+    'Dedicated to the holistic awakening and empowerment of youth aged 15–30 across spiritual grounding, vocational careers, physical health, and emotional resilience.',
+  heroBadgeText: 'Guided by Sahebji • An Initiative of Sri Jinshasan Aradhana Trust',
+  heroTargetAge: 'Youth (15–30)',
+  heroPrimaryBtnText: 'Become a Member',
+  heroSecondaryBtnText: 'Join WhatsApp Community',
   instagramUrl: SITE_CONFIG.social.instagram,
   instagramHandle: '@jaingenius',
   youtubeUrl: SITE_CONFIG.social.youtube,
@@ -133,6 +143,8 @@ const STORAGE_KEYS = {
   SOCIAL: 'jg_cms_social_posts',
   LOGS: 'jg_cms_activity_logs',
   AUTH: 'jg_cms_admin_auth',
+  LIVE_EDIT: 'jg_cms_live_edit_mode',
+  INITIALIZED: 'jg_cms_db_initialized',
 };
 
 // Listeners for reactive store
@@ -160,6 +172,7 @@ export interface CMSState {
   socialPosts: SocialPost[];
   logs: AdminActivityLog[];
   isAuthenticated: boolean;
+  isLiveEditMode: boolean;
   firebaseSyncStatus: FirebaseSyncStatus;
   lastSyncedAt: string | null;
 }
@@ -197,10 +210,11 @@ let state: CMSState = {
       timestamp: new Date().toISOString(),
       action: 'create',
       module: 'system',
-      description: 'Connected to Firebase Firestore with real-time sync.',
+      description: 'Connected to Firebase Firestore with real-time sync & cloud persistence.',
     },
   ]),
   isAuthenticated: loadFromStorage<boolean>(STORAGE_KEYS.AUTH, false),
+  isLiveEditMode: loadFromStorage<boolean>(STORAGE_KEYS.LIVE_EDIT, false),
   firebaseSyncStatus: 'syncing',
   lastSyncedAt: null,
 };
@@ -223,7 +237,6 @@ function logActivity(
   };
   saveToStorage(STORAGE_KEYS.LOGS, state.logs);
 
-  // Asynchronously record log in Firestore
   try {
     setDoc(doc(db, 'activityLogs', newLog.id), newLog).catch(() => {});
   } catch {
@@ -236,48 +249,65 @@ function logActivity(
 // ==========================================
 let hasInitializedFirestoreListeners = false;
 
+async function checkAndBootstrapInitialData() {
+  try {
+    const metaRef = doc(db, 'settings', 'cms_meta');
+    const metaSnap = await getDoc(metaRef);
+
+    if (!metaSnap.exists()) {
+      // First-time database bootstrap only!
+      const batch = writeBatch(db);
+      EVENTS_DATA.forEach((ev) => batch.set(doc(db, 'events', ev.id), ev));
+      GALLERY_ITEMS.forEach((it) => batch.set(doc(db, 'gallery', it.id), it));
+      INITIAL_NEWS_ARTICLES.forEach((art) => batch.set(doc(db, 'news', art.id), art));
+      TESTIMONIAL_SLOTS.forEach((t) => batch.set(doc(db, 'testimonials', String(t.slotId)), t));
+      INITIAL_SOCIAL_POSTS.forEach((p) => batch.set(doc(db, 'socialPosts', p.id), p));
+      batch.set(doc(db, 'settings', 'site_settings'), INITIAL_SITE_SETTINGS);
+      batch.set(metaRef, {
+        initialized: true,
+        seededAt: new Date().toISOString(),
+        version: '2.0',
+      });
+      await batch.commit();
+      saveToStorage(STORAGE_KEYS.INITIALIZED, true);
+    } else {
+      saveToStorage(STORAGE_KEYS.INITIALIZED, true);
+    }
+  } catch (err) {
+    console.warn('Initial database metadata check:', err);
+  }
+}
+
 function initFirestoreSync() {
   if (hasInitializedFirestoreListeners) return;
   hasInitializedFirestoreListeners = true;
 
+  // Run initialization check in background
+  checkAndBootstrapInitialData();
+
   try {
-    // 1. Events Listener
+    // 1. Events Listener (Does NOT auto-seed if empty! Empty means admin intentionally deleted all)
     const eventsPath = 'events';
     onSnapshot(
       collection(db, eventsPath),
-      async (snapshot) => {
-        if (snapshot.empty) {
-          // Auto-seed initial events if collection is brand new
-          try {
-            const batch = writeBatch(db);
-            EVENTS_DATA.forEach((ev) => {
-              batch.set(doc(db, 'events', ev.id), ev);
-            });
-            await batch.commit();
-          } catch (seedErr) {
-            console.warn('Initial events seed check:', seedErr);
-          }
-        } else {
-          const remoteEvents: EventItem[] = [];
-          snapshot.forEach((d) => remoteEvents.push(d.data() as EventItem));
-          state = {
-            ...state,
-            events: remoteEvents,
-            firebaseSyncStatus: 'connected',
-            lastSyncedAt: new Date().toISOString(),
-          };
-          saveToStorage(STORAGE_KEYS.EVENTS, remoteEvents);
-          notify();
-        }
+      (snapshot) => {
+        const remoteEvents: EventItem[] = [];
+        snapshot.forEach((d) => remoteEvents.push(d.data() as EventItem));
+        state = {
+          ...state,
+          events: remoteEvents,
+          firebaseSyncStatus: 'connected',
+          lastSyncedAt: new Date().toISOString(),
+        };
+        saveToStorage(STORAGE_KEYS.EVENTS, remoteEvents);
+        notify();
       },
       (error) => {
         state = { ...state, firebaseSyncStatus: 'error' };
         notify();
         try {
           handleFirestoreError(error, OperationType.LIST, eventsPath);
-        } catch {
-          // handled in console
-        }
+        } catch {}
       }
     );
 
@@ -285,36 +315,22 @@ function initFirestoreSync() {
     const galleryPath = 'gallery';
     onSnapshot(
       collection(db, galleryPath),
-      async (snapshot) => {
-        if (snapshot.empty) {
-          try {
-            const batch = writeBatch(db);
-            GALLERY_ITEMS.forEach((it) => {
-              batch.set(doc(db, 'gallery', it.id), it);
-            });
-            await batch.commit();
-          } catch (seedErr) {
-            console.warn('Initial gallery seed check:', seedErr);
-          }
-        } else {
-          const remoteGallery: GalleryItem[] = [];
-          snapshot.forEach((d) => remoteGallery.push(d.data() as GalleryItem));
-          state = {
-            ...state,
-            gallery: remoteGallery,
-            firebaseSyncStatus: 'connected',
-            lastSyncedAt: new Date().toISOString(),
-          };
-          saveToStorage(STORAGE_KEYS.GALLERY, remoteGallery);
-          notify();
-        }
+      (snapshot) => {
+        const remoteGallery: GalleryItem[] = [];
+        snapshot.forEach((d) => remoteGallery.push(d.data() as GalleryItem));
+        state = {
+          ...state,
+          gallery: remoteGallery,
+          firebaseSyncStatus: 'connected',
+          lastSyncedAt: new Date().toISOString(),
+        };
+        saveToStorage(STORAGE_KEYS.GALLERY, remoteGallery);
+        notify();
       },
       (error) => {
         try {
           handleFirestoreError(error, OperationType.LIST, galleryPath);
-        } catch {
-          // logged
-        }
+        } catch {}
       }
     );
 
@@ -322,36 +338,22 @@ function initFirestoreSync() {
     const newsPath = 'news';
     onSnapshot(
       collection(db, newsPath),
-      async (snapshot) => {
-        if (snapshot.empty) {
-          try {
-            const batch = writeBatch(db);
-            INITIAL_NEWS_ARTICLES.forEach((art) => {
-              batch.set(doc(db, 'news', art.id), art);
-            });
-            await batch.commit();
-          } catch (seedErr) {
-            console.warn('Initial news seed check:', seedErr);
-          }
-        } else {
-          const remoteNews: NewsArticle[] = [];
-          snapshot.forEach((d) => remoteNews.push(d.data() as NewsArticle));
-          state = {
-            ...state,
-            news: remoteNews,
-            firebaseSyncStatus: 'connected',
-            lastSyncedAt: new Date().toISOString(),
-          };
-          saveToStorage(STORAGE_KEYS.NEWS, remoteNews);
-          notify();
-        }
+      (snapshot) => {
+        const remoteNews: NewsArticle[] = [];
+        snapshot.forEach((d) => remoteNews.push(d.data() as NewsArticle));
+        state = {
+          ...state,
+          news: remoteNews,
+          firebaseSyncStatus: 'connected',
+          lastSyncedAt: new Date().toISOString(),
+        };
+        saveToStorage(STORAGE_KEYS.NEWS, remoteNews);
+        notify();
       },
       (error) => {
         try {
           handleFirestoreError(error, OperationType.LIST, newsPath);
-        } catch {
-          // logged
-        }
+        } catch {}
       }
     );
 
@@ -359,75 +361,49 @@ function initFirestoreSync() {
     const testimonialsPath = 'testimonials';
     onSnapshot(
       collection(db, testimonialsPath),
-      async (snapshot) => {
-        if (snapshot.empty) {
-          try {
-            const batch = writeBatch(db);
-            TESTIMONIAL_SLOTS.forEach((t) => {
-              batch.set(doc(db, 'testimonials', String(t.slotId)), t);
-            });
-            await batch.commit();
-          } catch (seedErr) {
-            console.warn('Initial testimonials seed check:', seedErr);
-          }
-        } else {
-          const remoteTestimonials: TestimonialSlot[] = [];
-          snapshot.forEach((d) => remoteTestimonials.push(d.data() as TestimonialSlot));
-          // Sort by slotId ascending
-          remoteTestimonials.sort((a, b) => a.slotId - b.slotId);
-          state = {
-            ...state,
-            testimonials: remoteTestimonials,
-            firebaseSyncStatus: 'connected',
-            lastSyncedAt: new Date().toISOString(),
-          };
-          saveToStorage(STORAGE_KEYS.TESTIMONIALS, remoteTestimonials);
-          notify();
-        }
+      (snapshot) => {
+        const remoteTestimonials: TestimonialSlot[] = [];
+        snapshot.forEach((d) => remoteTestimonials.push(d.data() as TestimonialSlot));
+        remoteTestimonials.sort((a, b) => a.slotId - b.slotId);
+        state = {
+          ...state,
+          testimonials: remoteTestimonials,
+          firebaseSyncStatus: 'connected',
+          lastSyncedAt: new Date().toISOString(),
+        };
+        saveToStorage(STORAGE_KEYS.TESTIMONIALS, remoteTestimonials);
+        notify();
       },
       (error) => {
         try {
           handleFirestoreError(error, OperationType.LIST, testimonialsPath);
-        } catch {
-          // logged
-        }
+        } catch {}
       }
     );
 
-    // 5. Social Posts Listener
+    // 5. Social Posts Listener (Fix: Never auto-seed if empty! Preserves user deletions!)
     const socialPath = 'socialPosts';
     onSnapshot(
       collection(db, socialPath),
-      async (snapshot) => {
-        if (snapshot.empty) {
-          try {
-            const batch = writeBatch(db);
-            INITIAL_SOCIAL_POSTS.forEach((p) => {
-              batch.set(doc(db, 'socialPosts', p.id), p);
-            });
-            await batch.commit();
-          } catch (seedErr) {
-            console.warn('Initial social seed check:', seedErr);
-          }
-        } else {
-          const remoteSocial: SocialPost[] = [];
-          snapshot.forEach((d) => remoteSocial.push(d.data() as SocialPost));
-          state = {
-            ...state,
-            socialPosts: remoteSocial,
-            firebaseSyncStatus: 'connected',
-            lastSyncedAt: new Date().toISOString(),
-          };
-          saveToStorage(STORAGE_KEYS.SOCIAL, remoteSocial);
-          notify();
-        }
+      (snapshot) => {
+        const remoteSocial: SocialPost[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data() as SocialPost;
+          remoteSocial.push({ ...data, id: data.id || d.id });
+        });
+        state = {
+          ...state,
+          socialPosts: remoteSocial,
+          firebaseSyncStatus: 'connected',
+          lastSyncedAt: new Date().toISOString(),
+        };
+        saveToStorage(STORAGE_KEYS.SOCIAL, remoteSocial);
+        notify();
       },
       (error) => {
         try {
           handleFirestoreError(error, OperationType.LIST, socialPath);
-        } catch {
-          // logged
-        }
+        } catch {}
       }
     );
 
@@ -435,14 +411,8 @@ function initFirestoreSync() {
     const settingsPath = 'settings/site_settings';
     onSnapshot(
       doc(db, 'settings', 'site_settings'),
-      async (snapshot) => {
-        if (!snapshot.exists()) {
-          try {
-            await setDoc(doc(db, 'settings', 'site_settings'), INITIAL_SITE_SETTINGS);
-          } catch (seedErr) {
-            console.warn('Initial settings seed check:', seedErr);
-          }
-        } else {
+      (snapshot) => {
+        if (snapshot.exists()) {
           const remoteSettings = snapshot.data() as SiteSettings;
           state = {
             ...state,
@@ -457,9 +427,7 @@ function initFirestoreSync() {
       (error) => {
         try {
           handleFirestoreError(error, OperationType.GET, settingsPath);
-        } catch {
-          // logged
-        }
+        } catch {}
       }
     );
   } catch (err) {
@@ -505,9 +473,28 @@ export const CMSStore = {
   },
 
   logout() {
-    state = { ...state, isAuthenticated: false };
+    state = { ...state, isAuthenticated: false, isLiveEditMode: false };
     saveToStorage(STORAGE_KEYS.AUTH, false);
+    saveToStorage(STORAGE_KEYS.LIVE_EDIT, false);
     logActivity('auth', 'system', 'Admin signed out of dashboard.');
+    notify();
+  },
+
+  // Live Edit Mode toggle
+  toggleLiveEditMode(): boolean {
+    if (!state.isAuthenticated) return false;
+    const next = !state.isLiveEditMode;
+    state = { ...state, isLiveEditMode: next };
+    saveToStorage(STORAGE_KEYS.LIVE_EDIT, next);
+    logActivity('update', 'system', `Live Edit Mode turned ${next ? 'ON' : 'OFF'}.`);
+    notify();
+    return next;
+  },
+
+  setLiveEditMode(enabled: boolean): void {
+    if (!state.isAuthenticated && enabled) return;
+    state = { ...state, isLiveEditMode: enabled };
+    saveToStorage(STORAGE_KEYS.LIVE_EDIT, enabled);
     notify();
   },
 
@@ -517,9 +504,9 @@ export const CMSStore = {
       ...event,
       id: event.id || 'event-' + Date.now(),
       createdAt: new Date().toISOString(),
+      isDeleted: false,
     };
 
-    // Optimistic local update
     state = {
       ...state,
       events: [newEvent, ...state.events],
@@ -528,7 +515,6 @@ export const CMSStore = {
     logActivity('create', 'events', `Created event: "${newEvent.title}" (${newEvent.status})`);
     notify();
 
-    // Firestore remote write
     const docPath = `events/${newEvent.id}`;
     try {
       await setDoc(doc(db, 'events', newEvent.id), newEvent);
@@ -563,7 +549,7 @@ export const CMSStore = {
       events: state.events.filter((ev) => ev.id !== id),
     };
     saveToStorage(STORAGE_KEYS.EVENTS, state.events);
-    logActivity('delete', 'events', `Deleted event: "${target?.title || id}"`);
+    logActivity('delete', 'events', `Permanently deleted event: "${target?.title || id}"`);
     notify();
 
     const docPath = `events/${id}`;
@@ -580,6 +566,7 @@ export const CMSStore = {
       ...item,
       id: item.id || 'gal-' + Date.now(),
       createdAt: new Date().toISOString(),
+      isDeleted: false,
     };
     state = {
       ...state,
@@ -627,7 +614,7 @@ export const CMSStore = {
       gallery: state.gallery.filter((it) => it.id !== id),
     };
     saveToStorage(STORAGE_KEYS.GALLERY, state.gallery);
-    logActivity('delete', 'gallery', `Deleted gallery item: "${target?.title || id}"`);
+    logActivity('delete', 'gallery', `Permanently deleted gallery photo: "${target?.title || id}"`);
     notify();
 
     const docPath = `gallery/${id}`;
@@ -644,6 +631,7 @@ export const CMSStore = {
       ...article,
       id: article.id || 'art-' + Date.now(),
       createdAt: new Date().toISOString(),
+      isDeleted: false,
     };
     state = {
       ...state,
@@ -687,7 +675,7 @@ export const CMSStore = {
       news: state.news.filter((art) => art.id !== id),
     };
     saveToStorage(STORAGE_KEYS.NEWS, state.news);
-    logActivity('delete', 'news', `Deleted news article: "${target?.title || id}"`);
+    logActivity('delete', 'news', `Permanently deleted news article: "${target?.title || id}"`);
     notify();
 
     const docPath = `news/${id}`;
@@ -707,6 +695,7 @@ export const CMSStore = {
       ...testimonial,
       slotId: testimonial.slotId || maxSlot + 1,
       createdAt: new Date().toISOString(),
+      isDeleted: false,
     };
     state = {
       ...state,
@@ -759,7 +748,7 @@ export const CMSStore = {
       testimonials: state.testimonials.filter((t) => t.slotId !== slotId),
     };
     saveToStorage(STORAGE_KEYS.TESTIMONIALS, state.testimonials);
-    logActivity('delete', 'testimonials', `Deleted testimonial Slot #${slotId}`);
+    logActivity('delete', 'testimonials', `Permanently deleted testimonial Slot #${slotId}`);
     notify();
 
     const docPath = `testimonials/${slotId}`;
@@ -789,12 +778,29 @@ export const CMSStore = {
     }
   },
 
+  // In-page quick section helpers
+  async updateHeroSettings(updates: Partial<SiteSettings>): Promise<void> {
+    await this.updateSiteSettings(updates);
+    logActivity('update', 'settings', 'Updated Hero section content in-place.');
+  },
+
+  async updateFooterSettings(updates: Partial<SiteSettings>): Promise<void> {
+    await this.updateSiteSettings(updates);
+    logActivity('update', 'settings', 'Updated Footer links and details in-place.');
+  },
+
+  async updateSocialConfig(updates: Partial<SiteSettings>): Promise<void> {
+    await this.updateSiteSettings(updates);
+    logActivity('update', 'social', 'Updated social channels and handles configuration.');
+  },
+
   // --- SOCIAL MEDIA POSTS & LIVE FEEDS ---
   async addSocialPost(post: Omit<SocialPost, 'id' | 'createdAt'>): Promise<SocialPost> {
     const newPost: SocialPost = {
       ...post,
       id: 'sp-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
       isPublished: post.isPublished !== undefined ? post.isPublished : true,
+      isDeleted: false,
       createdAt: new Date().toISOString(),
     };
     state = {
@@ -841,23 +847,27 @@ export const CMSStore = {
   },
 
   async deleteSocialPost(id: string): Promise<boolean> {
-    const post = state.socialPosts.find((p) => p.id === id);
-    if (!post) return false;
+    const strId = String(id).trim();
+    const post = state.socialPosts.find((p) => String(p.id).trim() === strId);
+
+    // Immediately remove from reactive state and cache
     state = {
       ...state,
-      socialPosts: state.socialPosts.filter((p) => p.id !== id),
+      socialPosts: state.socialPosts.filter((p) => String(p.id).trim() !== strId),
     };
     saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
-    logActivity(
-      'delete',
-      'social',
-      `Deleted ${post.platform} post: "${post.caption.substring(0, 30)}..."`
-    );
+    if (post) {
+      logActivity(
+        'delete',
+        'social',
+        `Permanently deleted ${post.platform} post: "${post.caption.substring(0, 30)}..."`
+      );
+    }
     notify();
 
-    const docPath = `socialPosts/${id}`;
+    const docPath = `socialPosts/${strId}`;
     try {
-      await deleteDoc(doc(db, 'socialPosts', id));
+      await deleteDoc(doc(db, 'socialPosts', strId));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, docPath);
     }
@@ -866,20 +876,384 @@ export const CMSStore = {
   },
 
   async togglePinSocialPost(id: string): Promise<boolean> {
-    const post = state.socialPosts.find((p) => p.id === id);
+    const strId = String(id).trim();
+    const post = state.socialPosts.find((p) => String(p.id).trim() === strId);
     if (!post) return false;
     const newPinned = !post.isPinned;
-    return this.updateSocialPost(id, { isPinned: newPinned });
+    return this.updateSocialPost(strId, { isPinned: newPinned });
   },
 
   async togglePublishSocialPost(id: string): Promise<boolean> {
-    const post = state.socialPosts.find((p) => p.id === id);
+    const strId = String(id).trim();
+    const post = state.socialPosts.find((p) => String(p.id).trim() === strId);
     if (!post) return false;
     const newPub = !post.isPublished;
-    return this.updateSocialPost(id, { isPublished: newPub });
+    return this.updateSocialPost(strId, { isPublished: newPub });
   },
 
-  // --- OPTIMIZED QUERY RETRIEVAL METHODS ---
+  // --- TRASH & RECYCLE BIN OPERATIONS ---
+  async moveToTrash(
+    module: 'social' | 'events' | 'gallery' | 'news' | 'testimonials',
+    id: string | number
+  ): Promise<boolean> {
+    const deletedAt = new Date().toISOString();
+    const strId = String(id).trim();
+
+    if (module === 'social') {
+      const target = state.socialPosts.find((p) => String(p.id).trim() === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        socialPosts: state.socialPosts.map((p) =>
+          String(p.id).trim() === strId ? { ...p, isDeleted: true, deletedAt } : p
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
+      logActivity('delete', 'social', `Moved social post to Trash: "${target.caption.slice(0, 30)}..."`);
+      notify();
+      try {
+        await setDoc(doc(db, 'socialPosts', strId), { ...target, isDeleted: true, deletedAt }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `socialPosts/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'events') {
+      const target = state.events.find((e) => e.id === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        events: state.events.map((e) =>
+          e.id === strId ? { ...e, isDeleted: true, deletedAt } : e
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.EVENTS, state.events);
+      logActivity('delete', 'events', `Moved event to Trash: "${target.title}"`);
+      notify();
+      try {
+        await setDoc(doc(db, 'events', strId), { ...target, isDeleted: true, deletedAt }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `events/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'gallery') {
+      const target = state.gallery.find((g) => g.id === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        gallery: state.gallery.map((g) =>
+          g.id === strId ? { ...g, isDeleted: true, deletedAt } : g
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.GALLERY, state.gallery);
+      logActivity('delete', 'gallery', `Moved photo to Trash: "${target.title}"`);
+      notify();
+      try {
+        await setDoc(doc(db, 'gallery', strId), { ...target, isDeleted: true, deletedAt }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `gallery/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'news') {
+      const target = state.news.find((n) => n.id === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        news: state.news.map((n) =>
+          n.id === strId ? { ...n, isDeleted: true, deletedAt } : n
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.NEWS, state.news);
+      logActivity('delete', 'news', `Moved article to Trash: "${target.title}"`);
+      notify();
+      try {
+        await setDoc(doc(db, 'news', strId), { ...target, isDeleted: true, deletedAt }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `news/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'testimonials') {
+      const numId = Number(id);
+      const target = state.testimonials.find((t) => t.slotId === numId);
+      if (!target) return false;
+      state = {
+        ...state,
+        testimonials: state.testimonials.map((t) =>
+          t.slotId === numId ? { ...t, isDeleted: true, deletedAt } : t
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.TESTIMONIALS, state.testimonials);
+      logActivity('delete', 'testimonials', `Moved testimonial Slot #${numId} to Trash`);
+      notify();
+      try {
+        await setDoc(doc(db, 'testimonials', strId), { ...target, isDeleted: true, deletedAt }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `testimonials/${strId}`);
+      }
+      return true;
+    }
+
+    return false;
+  },
+
+  async restoreFromTrash(
+    module: 'social' | 'events' | 'gallery' | 'news' | 'testimonials',
+    id: string | number
+  ): Promise<boolean> {
+    const strId = String(id);
+
+    if (module === 'social') {
+      const target = state.socialPosts.find((p) => p.id === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        socialPosts: state.socialPosts.map((p) =>
+          p.id === strId ? { ...p, isDeleted: false, deletedAt: null } : p
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.SOCIAL, state.socialPosts);
+      logActivity('update', 'social', `Restored social post from Trash: "${target.caption.slice(0, 30)}..."`);
+      notify();
+      try {
+        await setDoc(doc(db, 'socialPosts', strId), { isDeleted: false, deletedAt: null }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `socialPosts/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'events') {
+      const target = state.events.find((e) => e.id === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        events: state.events.map((e) =>
+          e.id === strId ? { ...e, isDeleted: false, deletedAt: null } : e
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.EVENTS, state.events);
+      logActivity('update', 'events', `Restored event from Trash: "${target.title}"`);
+      notify();
+      try {
+        await setDoc(doc(db, 'events', strId), { isDeleted: false, deletedAt: null }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `events/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'gallery') {
+      const target = state.gallery.find((g) => g.id === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        gallery: state.gallery.map((g) =>
+          g.id === strId ? { ...g, isDeleted: false, deletedAt: null } : g
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.GALLERY, state.gallery);
+      logActivity('update', 'gallery', `Restored photo from Trash: "${target.title}"`);
+      notify();
+      try {
+        await setDoc(doc(db, 'gallery', strId), { isDeleted: false, deletedAt: null }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `gallery/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'news') {
+      const target = state.news.find((n) => n.id === strId);
+      if (!target) return false;
+      state = {
+        ...state,
+        news: state.news.map((n) =>
+          n.id === strId ? { ...n, isDeleted: false, deletedAt: null } : n
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.NEWS, state.news);
+      logActivity('update', 'news', `Restored article from Trash: "${target.title}"`);
+      notify();
+      try {
+        await setDoc(doc(db, 'news', strId), { isDeleted: false, deletedAt: null }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `news/${strId}`);
+      }
+      return true;
+    }
+
+    if (module === 'testimonials') {
+      const numId = Number(id);
+      const target = state.testimonials.find((t) => t.slotId === numId);
+      if (!target) return false;
+      state = {
+        ...state,
+        testimonials: state.testimonials.map((t) =>
+          t.slotId === numId ? { ...t, isDeleted: false, deletedAt: null } : t
+        ),
+      };
+      saveToStorage(STORAGE_KEYS.TESTIMONIALS, state.testimonials);
+      logActivity('update', 'testimonials', `Restored testimonial Slot #${numId} from Trash`);
+      notify();
+      try {
+        await setDoc(doc(db, 'testimonials', strId), { isDeleted: false, deletedAt: null }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.UPDATE, `testimonials/${strId}`);
+      }
+      return true;
+    }
+
+    return false;
+  },
+
+  async permanentlyDelete(
+    module: 'social' | 'events' | 'gallery' | 'news' | 'testimonials',
+    id: string | number
+  ): Promise<boolean> {
+    const strId = String(id);
+    if (module === 'social') return this.deleteSocialPost(strId);
+    if (module === 'events') {
+      await this.deleteEvent(strId);
+      return true;
+    }
+    if (module === 'gallery') {
+      await this.deleteGalleryItem(strId);
+      return true;
+    }
+    if (module === 'news') {
+      await this.deleteNewsArticle(strId);
+      return true;
+    }
+    if (module === 'testimonials') {
+      await this.deleteTestimonial(Number(id));
+      return true;
+    }
+    return false;
+  },
+
+  getTrashItems(): TrashItem[] {
+    const items: TrashItem[] = [];
+
+    state.socialPosts
+      .filter((p) => p.isDeleted)
+      .forEach((p) => {
+        items.push({
+          id: p.id,
+          module: 'social',
+          title: p.caption ? p.caption.slice(0, 60) : 'Social Media Update',
+          subtitle: `${p.platform.toUpperCase()} post by ${p.authorName}`,
+          deletedAt: p.deletedAt || p.createdAt || new Date().toISOString(),
+          platform: p.platform,
+          originalData: p,
+        });
+      });
+
+    state.events
+      .filter((e) => e.isDeleted)
+      .forEach((e) => {
+        items.push({
+          id: e.id,
+          module: 'events',
+          title: e.title,
+          subtitle: `${e.date} • ${e.venue}`,
+          deletedAt: e.deletedAt || e.createdAt || new Date().toISOString(),
+          originalData: e,
+        });
+      });
+
+    state.gallery
+      .filter((g) => g.isDeleted)
+      .forEach((g) => {
+        items.push({
+          id: g.id,
+          module: 'gallery',
+          title: g.title,
+          subtitle: `${g.category} • ${g.year}`,
+          deletedAt: g.deletedAt || g.createdAt || new Date().toISOString(),
+          originalData: g,
+        });
+      });
+
+    state.news
+      .filter((n) => n.isDeleted)
+      .forEach((n) => {
+        items.push({
+          id: n.id,
+          module: 'news',
+          title: n.title,
+          subtitle: `${n.category} • ${n.date}`,
+          deletedAt: n.deletedAt || n.createdAt || new Date().toISOString(),
+          originalData: n,
+        });
+      });
+
+    state.testimonials
+      .filter((t) => t.isDeleted)
+      .forEach((t) => {
+        items.push({
+          id: String(t.slotId),
+          module: 'testimonials',
+          title: t.studentName || t.label,
+          subtitle: `Slot #${t.slotId} • ${t.trackOrProgramme || 'Trainee'}`,
+          deletedAt: t.deletedAt || t.createdAt || new Date().toISOString(),
+          originalData: t,
+        });
+      });
+
+    return items.sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime());
+  },
+
+  async emptyTrash(module?: 'social' | 'events' | 'gallery' | 'news' | 'testimonials'): Promise<number> {
+    const trashList = this.getTrashItems().filter((item) => (!module ? true : item.module === module));
+    for (const item of trashList) {
+      await this.permanentlyDelete(item.module, item.id);
+    }
+    logActivity('delete', 'system', `Emptied trash (${trashList.length} items permanently removed).`);
+    return trashList.length;
+  },
+
+  // --- FILTERED ACTIVE QUERIES (Excludes Trashed Items) ---
+  getActiveSocialPosts(): SocialPost[] {
+    return state.socialPosts
+      .filter((p) => !p.isDeleted && p.isPublished !== false)
+      .sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      });
+  },
+
+  getActiveEvents(statusFilter?: 'upcoming' | 'ongoing' | 'past'): EventItem[] {
+    const list = state.events.filter((e) => !e.isDeleted);
+    const filtered = statusFilter ? list.filter((e) => e.status === statusFilter) : list;
+    return [...filtered].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  },
+
+  getActiveGallery(categoryFilter?: string): GalleryItem[] {
+    const list = state.gallery.filter((g) => !g.isDeleted);
+    return categoryFilter && categoryFilter !== 'all'
+      ? list.filter((g) => g.category.toLowerCase() === categoryFilter.toLowerCase())
+      : list;
+  },
+
+  getActiveNews(): NewsArticle[] {
+    return state.news.filter((n) => !n.isDeleted);
+  },
+
+  getActiveTestimonials(): TestimonialSlot[] {
+    return state.testimonials
+      .filter((t) => !t.isDeleted)
+      .sort((a, b) => a.slotId - b.slotId);
+  },
+
+  // --- QUERY RETRIEVAL METHODS ---
   getEventById(id: string): EventItem | undefined {
     return state.events.find((e) => e.id === id);
   },
@@ -897,26 +1271,17 @@ export const CMSStore = {
   },
 
   getPublishedSocialPosts(): SocialPost[] {
-    return state.socialPosts
-      .filter((p) => p.isPublished !== false)
-      .sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-      });
+    return this.getActiveSocialPosts();
   },
 
   getEventsSorted(statusFilter?: 'upcoming' | 'ongoing' | 'past'): EventItem[] {
-    const list = statusFilter
-      ? state.events.filter((e) => e.status === statusFilter)
-      : state.events;
-    return [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return this.getActiveEvents(statusFilter);
   },
 
   // --- BACKUP & RESTORE ---
   exportBackupJSON(): string {
     const backup = {
-      version: '1.0',
+      version: '2.0',
       exportedAt: new Date().toISOString(),
       institution: 'Jain Genius — The Change Makers',
       data: {
@@ -1010,6 +1375,10 @@ export const CMSStore = {
       TESTIMONIAL_SLOTS.forEach((t) => batch.set(doc(db, 'testimonials', String(t.slotId)), t));
       INITIAL_SOCIAL_POSTS.forEach((p) => batch.set(doc(db, 'socialPosts', p.id), p));
       batch.set(doc(db, 'settings', 'site_settings'), INITIAL_SITE_SETTINGS);
+      batch.set(doc(db, 'settings', 'cms_meta'), {
+        initialized: true,
+        seededAt: new Date().toISOString(),
+      });
       await batch.commit();
     } catch (err) {
       console.warn('Batch reset to Firestore:', err);
@@ -1036,6 +1405,8 @@ export function useCMS() {
     ...currentState,
     login: CMSStore.login,
     logout: CMSStore.logout,
+    toggleLiveEditMode: CMSStore.toggleLiveEditMode,
+    setLiveEditMode: CMSStore.setLiveEditMode,
     addEvent: CMSStore.addEvent,
     updateEvent: CMSStore.updateEvent,
     deleteEvent: CMSStore.deleteEvent,
@@ -1049,15 +1420,29 @@ export function useCMS() {
     updateTestimonial: CMSStore.updateTestimonial,
     deleteTestimonial: CMSStore.deleteTestimonial,
     updateSiteSettings: CMSStore.updateSiteSettings,
+    updateHeroSettings: CMSStore.updateHeroSettings,
+    updateFooterSettings: CMSStore.updateFooterSettings,
+    updateSocialConfig: CMSStore.updateSocialConfig,
     addSocialPost: CMSStore.addSocialPost,
     updateSocialPost: CMSStore.updateSocialPost,
     deleteSocialPost: CMSStore.deleteSocialPost,
     togglePinSocialPost: CMSStore.togglePinSocialPost,
     togglePublishSocialPost: CMSStore.togglePublishSocialPost,
+    // Trash & Recycle Bin
+    moveToTrash: CMSStore.moveToTrash,
+    restoreFromTrash: CMSStore.restoreFromTrash,
+    permanentlyDelete: CMSStore.permanentlyDelete,
+    emptyTrash: CMSStore.emptyTrash,
+    getTrashItems: CMSStore.getTrashItems,
+    // Filtered queries
+    getActiveSocialPosts: CMSStore.getActiveSocialPosts,
+    getActiveEvents: CMSStore.getActiveEvents,
+    getActiveGallery: CMSStore.getActiveGallery,
+    getActiveNews: CMSStore.getActiveNews,
+    getActiveTestimonials: CMSStore.getActiveTestimonials,
     exportBackupJSON: CMSStore.exportBackupJSON,
     importBackupJSON: CMSStore.importBackupJSON,
     resetToFactoryDefaults: CMSStore.resetToFactoryDefaults,
-    // Optimized fast retrieval queries
     getEventById: CMSStore.getEventById,
     getGalleryById: CMSStore.getGalleryById,
     getNewsById: CMSStore.getNewsById,

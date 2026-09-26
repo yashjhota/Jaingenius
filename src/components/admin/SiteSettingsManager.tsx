@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCMS } from '../../services/cmsStore';
 import { SiteSettings, PageId } from '../../types';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   Settings,
   Save,
@@ -53,6 +54,7 @@ export const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [importJsonText, setImportJsonText] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+  const [isConfirmingReset, setIsConfirmingReset] = useState(false);
 
   // Synchronize when remote settings change unless form is being actively typed
   useEffect(() => {
@@ -106,16 +108,15 @@ export const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({
     }
   };
 
-  const handleReset = async () => {
-    if (
-      window.confirm(
-        'Are you sure you want to reset all website events, gallery, news, and testimonials to foundation defaults? This will erase custom additions.'
-      )
-    ) {
-      await resetToFactoryDefaults();
-      showToast('All website collections reset to foundation seeds.');
-      setFormData({ ...settings });
-    }
+  const handleReset = () => {
+    setIsConfirmingReset(true);
+  };
+
+  const handleConfirmReset = async () => {
+    await resetToFactoryDefaults();
+    showToast('All website collections reset to foundation seeds.');
+    setFormData({ ...settings });
+    setIsConfirmingReset(false);
   };
 
   return (
@@ -877,6 +878,16 @@ export const SiteSettingsManager: React.FC<SiteSettingsManagerProps> = ({
           </form>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={isConfirmingReset}
+        title="Reset All Content to Foundation Seeds?"
+        message="Are you sure you want to reset all website events, gallery, news, and testimonials to foundation defaults? This will erase custom additions."
+        confirmLabel="Reset Content"
+        confirmVariant="danger"
+        onConfirm={handleConfirmReset}
+        onCancel={() => setIsConfirmingReset(false)}
+      />
     </div>
   );
 };

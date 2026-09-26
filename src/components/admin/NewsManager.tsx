@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NewsArticle, PageId } from '../../types';
 import { useCMS } from '../../services/cmsStore';
 import { ImageUploadField } from './ImageUploadField';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   Newspaper,
   Plus,
@@ -28,6 +29,7 @@ export const NewsManager: React.FC<NewsManagerProps> = ({ onNavigate, showToast 
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
   const categories: NewsArticle['category'][] = [
     'Philosophy',
@@ -111,10 +113,14 @@ export const NewsManager: React.FC<NewsManagerProps> = ({ onNavigate, showToast 
   };
 
   const handleDelete = (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete the article "${title}"?`)) {
-      deleteNewsArticle(id);
-      showToast(`Deleted article: "${title}"`);
-    }
+    setDeleteTarget({ id, title });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteNewsArticle(deleteTarget.id);
+    showToast(`Deleted article: "${deleteTarget.title}"`);
+    setDeleteTarget(null);
   };
 
   return (
@@ -407,6 +413,17 @@ export const NewsManager: React.FC<NewsManagerProps> = ({ onNavigate, showToast 
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title="Delete News Article?"
+        message="Are you sure you want to delete this article? This will remove it from the public website."
+        itemTitle={deleteTarget?.title}
+        confirmLabel="Delete Article"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

@@ -3,27 +3,47 @@ import { Logo } from '../common/Logo';
 import { SITE_CONFIG } from '../../data/siteConfig';
 import { Language, PageId } from '../../types';
 import { TRANSLATIONS } from '../../data/i18n';
-import { Sparkles, ArrowRight, UserCheck, ExternalLink, ShieldCheck, Compass, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, UserCheck, ExternalLink, ShieldCheck, Compass, CheckCircle2, Edit3 } from 'lucide-react';
 import { useCMS } from '../../services/cmsStore';
 
 interface HeroProps {
   lang: Language;
   onNavigate: (page: PageId) => void;
   onOpenRegister: () => void;
+  onOpenQuickEdit?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) => {
+export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister, onOpenQuickEdit }) => {
   const t = TRANSLATIONS[lang];
-  const { settings } = useCMS();
+  const { settings, isLiveEditMode, isAuthenticated } = useCMS();
   const traineesCount = settings.currentTraineesCount ?? SITE_CONFIG.currentTraineesCount;
   const initiativeOf = settings.initiativeOf || SITE_CONFIG.initiativeOf;
   const memberPortalUrl = settings.memberPortalUrl || SITE_CONFIG.memberPortalUrl;
   const membershipDeposit = settings.membershipDeposit || SITE_CONFIG.membershipDeposit;
-  const targetAge = settings.targetAge || 'Youth (15–30)';
-  const tagline = settings.tagline || 'The Change Makers';
+  const targetAge = settings.heroTargetAge || settings.targetAge || 'Youth (15–30)';
+  const heroTitle = settings.heroTitle || 'Jain Genius';
+  const heroHighlightWord = settings.heroHighlightWord || settings.tagline || 'The Change Makers';
+  const heroDescription = settings.heroDescription || settings.subTagline || t.heroMission;
+  const heroBadge = settings.heroBadgeText || `${t.guidedBy} ${initiativeOf}`;
+  const heroPrimaryBtn = settings.heroPrimaryBtnText || t.becomeMember;
 
   return (
-    <section className="relative pt-12 pb-20 md:pt-16 md:pb-28 bg-[#0C1B2A] text-[#FAF8F5] overflow-hidden">
+    <section className={`relative pt-12 pb-20 md:pt-16 md:pb-28 bg-[#0C1B2A] text-[#FAF8F5] overflow-hidden ${
+      isLiveEditMode && isAuthenticated ? 'ring-2 ring-inset ring-[#E59A1E]/50' : ''
+    }`}>
+      {/* In-Page Live Edit Floating Action */}
+      {isLiveEditMode && isAuthenticated && (
+        <div className="absolute top-4 right-4 z-30">
+          <button
+            onClick={onOpenQuickEdit}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#E59A1E] hover:bg-[#F3A628] text-[#0C1B2A] font-bold text-xs shadow-xl transition-all hover:scale-105 cursor-pointer ring-2 ring-black/40"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Edit Hero Copy</span>
+          </button>
+        </div>
+      )}
+
       {/* Background Architectural Patterns & Subtle Gold Glows */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -48,22 +68,22 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#162E4A] border border-[#E59A1E]/30 text-[#F3A628] text-xs font-semibold shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-[#E59A1E]" />
               <span className="truncate max-w-[320px] sm:max-w-none">
-                {t.guidedBy} {initiativeOf}
+                {heroBadge}
               </span>
             </div>
 
             {/* Main Headline */}
             <div className="space-y-3">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#FAF8F5] tracking-tight leading-[1.1] font-display">
-                Jain Genius <br />
+                {heroTitle} <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5B738] via-[#E59A1E] to-[#F3A628]">
-                  {tagline}
+                  {heroHighlightWord}
                 </span>
               </h1>
 
               {/* Supporting Mission Message */}
               <p className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-normal">
-                {settings.subTagline || t.heroMission}
+                {heroDescription}
               </p>
             </div>
 
@@ -95,7 +115,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onNavigate, onOpenRegister }) 
                 onClick={onOpenRegister}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl text-base font-bold text-[#0C1B2A] bg-gradient-to-r from-[#F5B738] to-[#E59A1E] hover:from-[#FBC658] hover:to-[#F3A628] shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
               >
-                <span>{t.becomeMember}</span>
+                <span>{heroPrimaryBtn}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 

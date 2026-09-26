@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TestimonialSlot, PageId } from '../../types';
 import { useCMS } from '../../services/cmsStore';
 import { ImageUploadField } from './ImageUploadField';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   MessageSquare,
   Plus,
@@ -28,6 +29,7 @@ export const TestimonialsManager: React.FC<TestimonialsManagerProps> = ({
   const { testimonials, addTestimonial, updateTestimonial, deleteTestimonial } = useCMS();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlotId, setEditingSlotId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ slotId: number; name: string } | null>(null);
 
   const initialForm: Omit<TestimonialSlot, 'slotId'> = {
     label: 'Student Graduate',
@@ -83,10 +85,14 @@ export const TestimonialsManager: React.FC<TestimonialsManagerProps> = ({
   };
 
   const handleDelete = (slotId: number, name: string) => {
-    if (window.confirm(`Delete testimonial slot #${slotId} (${name})?`)) {
-      deleteTestimonial(slotId);
-      showToast(`Deleted testimonial slot #${slotId}`);
-    }
+    setDeleteTarget({ slotId, name });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteTestimonial(deleteTarget.slotId);
+    showToast(`Deleted testimonial slot #${deleteTarget.slotId}`);
+    setDeleteTarget(null);
   };
 
   return (
@@ -378,6 +384,17 @@ export const TestimonialsManager: React.FC<TestimonialsManagerProps> = ({
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title="Delete Testimonial Slot?"
+        message="Are you sure you want to delete this testimonial? It will be removed from public display."
+        itemTitle={deleteTarget ? `Slot #${deleteTarget.slotId}: ${deleteTarget.name}` : undefined}
+        confirmLabel="Delete Testimonial"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { EventItem, PageId } from '../../types';
 import { useCMS } from '../../services/cmsStore';
 import { ImageUploadField } from './ImageUploadField';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   Calendar,
   Plus,
@@ -28,6 +29,7 @@ export const EventsManager: React.FC<EventsManagerProps> = ({ onNavigate, showTo
   const { events, addEvent, updateEvent, deleteEvent } = useCMS();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
 
@@ -122,10 +124,14 @@ export const EventsManager: React.FC<EventsManagerProps> = ({ onNavigate, showTo
   };
 
   const handleDelete = (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete the event "${title}"? This will remove it from the public website.`)) {
-      deleteEvent(id);
-      showToast(`Deleted event: "${title}"`);
-    }
+    setDeleteTarget({ id, title });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteEvent(deleteTarget.id);
+    showToast(`Deleted event: "${deleteTarget.title}"`);
+    setDeleteTarget(null);
   };
 
   const handleToggleStatus = (ev: EventItem) => {
@@ -568,6 +574,17 @@ export const EventsManager: React.FC<EventsManagerProps> = ({ onNavigate, showTo
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title="Delete Event?"
+        message="Are you sure you want to delete this event? This will remove it from the public website."
+        itemTitle={deleteTarget?.title}
+        confirmLabel="Delete Event"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GalleryItem, PageId } from '../../types';
 import { useCMS } from '../../services/cmsStore';
 import { ImageUploadField } from './ImageUploadField';
+import { ConfirmDialog } from './ConfirmDialog';
 import {
   Camera,
   Plus,
@@ -27,6 +28,7 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ onNavigate, show
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
   const categories: GalleryItem['category'][] = [
     'Youth Session',
@@ -94,10 +96,14 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ onNavigate, show
   };
 
   const handleDelete = (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to remove "${title}" from the public gallery?`)) {
-      deleteGalleryItem(id);
-      showToast(`Removed photo: "${title}"`);
-    }
+    setDeleteTarget({ id, title });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteGalleryItem(deleteTarget.id);
+    showToast(`Removed photo: "${deleteTarget.title}"`);
+    setDeleteTarget(null);
   };
 
   return (
@@ -374,6 +380,17 @@ export const GalleryManager: React.FC<GalleryManagerProps> = ({ onNavigate, show
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        title="Remove Photo from Gallery?"
+        message="Are you sure you want to remove this photo from the public gallery?"
+        itemTitle={deleteTarget?.title}
+        confirmLabel="Remove Photo"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };

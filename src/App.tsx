@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PageId, Language } from './types';
+import { PageId, Language, SocialPost, EventItem, GalleryItem } from './types';
+import { useCMS } from './services/cmsStore';
 import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { CTASection } from './components/layout/CTASection';
@@ -27,11 +28,32 @@ import { NewsView } from './components/news/NewsView';
 import { ContactView } from './components/contact/ContactView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 
+// Admin Live Customization Overlays
+import { AdminLiveBar } from './components/admin/AdminLiveBar';
+import { InPageSectionEditorModal, QuickEditorSection } from './components/admin/InPageSectionEditorModal';
+import { CheckCircle2, X } from 'lucide-react';
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState<PageId>('home');
   const [lang, setLang] = useState<Language>('en');
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [selectedTrackForRegister, setSelectedTrackForRegister] = useState<string>('');
+
+  const { isAuthenticated, isLiveEditMode } = useCMS();
+
+  // In-page quick section editor state
+  const [quickEditorSection, setQuickEditorSection] = useState<QuickEditorSection | null>(null);
+  const [quickEditorItem, setQuickEditorItem] = useState<any>(null);
+
+  // Global toast feedback system
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((cur) => (cur === msg ? null : cur));
+    }, 4500);
+  };
 
   // Handle URL hash navigation if present
   useEffect(() => {
@@ -78,7 +100,21 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAF8F5] text-[#0C1B2A] font-sans antialiased selection:bg-[#E59A1E] selection:text-[#0C1B2A]">
+    <div
+      className={`min-h-screen flex flex-col bg-[#FAF8F5] text-[#0C1B2A] font-sans antialiased selection:bg-[#E59A1E] selection:text-[#0C1B2A] ${
+        isAuthenticated ? 'pt-10' : ''
+      }`}
+    >
+      {/* Floating Admin Dock & Live Bar */}
+      <AdminLiveBar
+        onNavigate={handleNavigate}
+        onOpenQuickEditor={(sec) => {
+          setQuickEditorItem(null);
+          setQuickEditorSection(sec as QuickEditorSection);
+        }}
+        onShowToast={showToast}
+      />
+
       {/* Persistent Sticky Top Header */}
       <Header
         currentPage={currentPage}
@@ -96,6 +132,10 @@ export default function App() {
               lang={lang}
               onNavigate={handleNavigate}
               onOpenRegister={() => handleOpenRegister()}
+              onOpenQuickEdit={() => {
+                setQuickEditorItem(null);
+                setQuickEditorSection('hero');
+              }}
             />
 
             <LiveMetrics lang={lang} />
@@ -124,6 +164,19 @@ export default function App() {
             <SocialFeedSection
               lang={lang}
               onNavigate={handleNavigate}
+              onOpenAddPost={() => {
+                setQuickEditorItem(null);
+                setQuickEditorSection('add_social_post');
+              }}
+              onOpenEditPost={(post: SocialPost) => {
+                setQuickEditorItem(post);
+                setQuickEditorSection('edit_social_post');
+              }}
+              onOpenEditSocials={() => {
+                setQuickEditorItem(null);
+                setQuickEditorSection('socials');
+              }}
+              onShowToast={showToast}
             />
 
             <CTASection
@@ -162,6 +215,15 @@ export default function App() {
             lang={lang}
             onNavigate={handleNavigate}
             onOpenRegister={(evTitle) => handleOpenRegister(evTitle)}
+            onOpenAddEvent={() => {
+              setQuickEditorItem(null);
+              setQuickEditorSection('add_event');
+            }}
+            onOpenEditEvent={(ev: EventItem) => {
+              setQuickEditorItem(ev);
+              setQuickEditorSection('edit_event');
+            }}
+            onShowToast={showToast}
           />
         )}
 
@@ -170,6 +232,15 @@ export default function App() {
             lang={lang}
             onNavigate={handleNavigate}
             onOpenRegister={() => handleOpenRegister()}
+            onOpenAddGallery={() => {
+              setQuickEditorItem(null);
+              setQuickEditorSection('add_gallery');
+            }}
+            onOpenEditGallery={(item: GalleryItem) => {
+              setQuickEditorItem(item);
+              setQuickEditorSection('edit_gallery');
+            }}
+            onShowToast={showToast}
           />
         )}
 
@@ -218,6 +289,10 @@ export default function App() {
         onNavigate={handleNavigate}
         lang={lang}
         onOpenRegister={() => handleOpenRegister()}
+        onOpenQuickEdit={() => {
+          setQuickEditorItem(null);
+          setQuickEditorSection('footer');
+        }}
       />
 
       {/* Branded Google Forms Wrapper Registration Modal */}
@@ -227,6 +302,33 @@ export default function App() {
         lang={lang}
         defaultTrack={selectedTrackForRegister}
       />
+
+      {/* In-Page Live Section Editor Modal */}
+      <InPageSectionEditorModal
+        section={quickEditorSection}
+        targetItem={quickEditorItem}
+        onClose={() => {
+          setQuickEditorSection(null);
+          setQuickEditorItem(null);
+        }}
+        onShowToast={showToast}
+      />
+
+      {/* Interactive Global Toast Notification Banner */}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-[#0C1B2A] text-white border border-[#E59A1E]/50 shadow-2xl backdrop-blur-md text-xs sm:text-sm font-medium">
+            <CheckCircle2 className="w-4 h-4 text-[#F3A628] shrink-0" />
+            <span>{toastMessage}</span>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="p-1 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer ml-2"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,24 +2,46 @@ import React, { useState } from 'react';
 import { useCMS } from '../../services/cmsStore';
 import { EventItem, Language, PageId } from '../../types';
 import { SITE_CONFIG } from '../../data/siteConfig';
-import { Calendar, Clock, MapPin, Users, Phone, Sparkles, Filter, QrCode, ArrowRight, X, Settings } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Users,
+  Phone,
+  Sparkles,
+  Filter,
+  QrCode,
+  ArrowRight,
+  X,
+  Settings,
+  Edit3,
+  Trash2,
+  Plus,
+} from 'lucide-react';
 
 interface EventsViewProps {
   lang: Language;
   onNavigate: (page: PageId) => void;
   onOpenRegister: (eventTitle?: string) => void;
+  onOpenEditEvent?: (ev: EventItem) => void;
+  onOpenAddEvent?: () => void;
+  onShowToast?: (msg: string) => void;
 }
 
 export const EventsView: React.FC<EventsViewProps> = ({
   lang,
   onNavigate,
   onOpenRegister,
+  onOpenEditEvent,
+  onOpenAddEvent,
+  onShowToast,
 }) => {
-  const { events, isAuthenticated } = useCMS();
+  const { events, isAuthenticated, isLiveEditMode, moveToTrash } = useCMS();
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
   const filteredEvents = events.filter((ev) => {
+    if (ev.isDeleted) return false;
     if (filter === 'upcoming') return ev.status === 'upcoming';
     if (filter === 'past') return ev.status === 'past';
     return true;
@@ -69,12 +91,19 @@ export const EventsView: React.FC<EventsViewProps> = ({
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-            <div className="text-xs text-slate-500 font-medium hidden md:block">
-              Standard Venue: Pathshala Hall, Chickpet Jain Temple
-            </div>
+            {isLiveEditMode && isAuthenticated && (
+              <button
+                onClick={onOpenAddEvent}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#E59A1E] hover:bg-[#F3A628] text-[#0C1B2A] text-xs font-bold transition-all shadow-sm cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Add Event</span>
+              </button>
+            )}
+
             <button
               onClick={() => onNavigate('admin')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[#B8780E] text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200/80 text-[#B8780E] text-xs font-semibold transition-colors cursor-pointer"
             >
               <Settings className="w-3.5 h-3.5" />
               <span>Admin Manage</span>
@@ -93,6 +122,34 @@ export const EventsView: React.FC<EventsViewProps> = ({
                 key={ev.id}
                 className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
               >
+                {/* Admin Live Action Ribbon */}
+                {isLiveEditMode && isAuthenticated && (
+                  <div className="bg-[#0C1B2A] text-white px-3 py-1.5 flex items-center justify-between text-[11px] border-b border-[#E59A1E]/30">
+                    <span className="text-[#F3A628] font-bold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-[#E59A1E]" />
+                      <span>Live Event</span>
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onOpenEditEvent?.(ev)}
+                        className="px-2 py-0.5 rounded bg-white/10 hover:bg-[#E59A1E] hover:text-[#0C1B2A] text-[10px] font-semibold transition-colors cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={async () => {
+                          await moveToTrash('events', ev.id);
+                          onShowToast?.(`Event "${ev.title}" moved to Trash.`);
+                        }}
+                        className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer flex items-center gap-0.5"
+                      >
+                        <Trash2 className="w-2.5 h-2.5" />
+                        <span>Trash</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Event Poster Card Banner */}
                 <div className="bg-gradient-to-br from-[#0C1B2A] via-[#112438] to-[#162E4A] p-6 text-white relative overflow-hidden">
                   {ev.posterImage && (
