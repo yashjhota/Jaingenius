@@ -196,12 +196,39 @@ function saveToStorage<T>(key: string, value: T): void {
   }
 }
 
+function normalizeTestimonialRecord(raw: Partial<TestimonialSlot> & Record<string, unknown>): TestimonialSlot {
+  const studentName = String(raw.studentName ?? raw.name ?? raw.label ?? 'Student').trim() || 'Student';
+  const experienceText = String(raw.experienceText ?? raw.quote ?? '').trim();
+  const cohort = String(raw.cohort ?? raw.yearOrCohort ?? 'Cohort 01').trim() || 'Cohort 01';
+
+  return {
+    slotId: Number(raw.slotId ?? 0),
+    label: String(raw.label ?? 'Student Graduate').trim() || 'Student Graduate',
+    gender: raw.gender === 'girl' ? 'girl' : 'boy',
+    status: raw.status === 'ready' ? 'ready' : 'to_supply',
+    studentName,
+    name: studentName,
+    trackOrProgramme: String(raw.trackOrProgramme ?? '60-Session Master Track').trim() || '60-Session Master Track',
+    experienceText,
+    quote: experienceText,
+    avatarUrl: String(raw.avatarUrl ?? '').trim(),
+    cohort,
+    yearOrCohort: cohort,
+    createdAt: raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
+    isDeleted: !!raw.isDeleted,
+    deletedAt: raw.deletedAt ?? null,
+    deletedBy: raw.deletedBy ? String(raw.deletedBy) : undefined,
+  };
+}
+
 // Initial state hydrated from local storage / static seed
 let state: CMSState = {
   events: loadFromStorage<EventItem[]>(STORAGE_KEYS.EVENTS, EVENTS_DATA),
   gallery: loadFromStorage<GalleryItem[]>(STORAGE_KEYS.GALLERY, GALLERY_ITEMS),
   news: loadFromStorage<NewsArticle[]>(STORAGE_KEYS.NEWS, INITIAL_NEWS_ARTICLES),
-  testimonials: loadFromStorage<TestimonialSlot[]>(STORAGE_KEYS.TESTIMONIALS, TESTIMONIAL_SLOTS),
+  testimonials: loadFromStorage<TestimonialSlot[]>(STORAGE_KEYS.TESTIMONIALS, TESTIMONIAL_SLOTS).map(
+    normalizeTestimonialRecord
+  ),
   settings: loadFromStorage<SiteSettings>(STORAGE_KEYS.SETTINGS, INITIAL_SITE_SETTINGS),
   socialPosts: loadFromStorage<SocialPost[]>(STORAGE_KEYS.SOCIAL, INITIAL_SOCIAL_POSTS),
   logs: loadFromStorage<AdminActivityLog[]>(STORAGE_KEYS.LOGS, [
@@ -363,7 +390,7 @@ function initFirestoreSync() {
       collection(db, testimonialsPath),
       (snapshot) => {
         const remoteTestimonials: TestimonialSlot[] = [];
-        snapshot.forEach((d) => remoteTestimonials.push(d.data() as TestimonialSlot));
+        snapshot.forEach((d) => remoteTestimonials.push(normalizeTestimonialRecord(d.data() as TestimonialSlot)));
         remoteTestimonials.sort((a, b) => a.slotId - b.slotId);
         state = {
           ...state,
@@ -691,12 +718,15 @@ export const CMSStore = {
     testimonial: Omit<TestimonialSlot, 'slotId'> & { slotId?: number }
   ): Promise<TestimonialSlot> {
     const maxSlot = state.testimonials.reduce((max, t) => Math.max(max, t.slotId), 0);
-    const newSlot: TestimonialSlot = {
+    const newSlot: TestimonialSlot = normalizeTestimonialRecord({
       ...testimonial,
       slotId: testimonial.slotId || maxSlot + 1,
       createdAt: new Date().toISOString(),
       isDeleted: false,
-    };
+      name: testimonial.studentName || testimonial.name || testimonial.label,
+      quote: testimonial.experienceText || testimonial.quote || '',
+      yearOrCohort: testimonial.cohort || testimonial.yearOrCohort || 'Cohort 01',
+    });
     state = {
       ...state,
       testimonials: [...state.testimonials, newSlot],
@@ -720,11 +750,19 @@ export const CMSStore = {
   },
 
   async updateTestimonial(slotId: number, updates: Partial<TestimonialSlot>): Promise<void> {
+    const updatedTestimonials = state.testimonials.map((t) => {
+      if (t.slotId !== slotId) return t;
+      const merged = normalizeTestimonialRecord({ ...t, ...updates, slotId });
+      return {
+        ...merged,
+        name: merged.studentName || merged.name || merged.label,
+        quote: merged.experienceText || merged.quote || '',
+        yearOrCohort: merged.cohort || merged.yearOrCohort || 'Cohort 01',
+      };
+    });
     state = {
       ...state,
-      testimonials: state.testimonials.map((t) =>
-        t.slotId === slotId ? { ...t, ...updates } : t
-      ),
+      testimonials: updatedTestimonials,
     };
     saveToStorage(STORAGE_KEYS.TESTIMONIALS, state.testimonials);
     logActivity(

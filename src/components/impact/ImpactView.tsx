@@ -124,7 +124,9 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
           {/* Structured Slots for 3 Boys & 2 Girls from Prompt */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {testimonials.map((slot) => {
-              const isPublished = slot.status === 'published' && slot.quote && slot.name;
+              const publicName = slot.studentName || slot.name || 'Student';
+              const publicQuote = slot.experienceText || slot.quote || '';
+              const isPublished = slot.status === 'ready' && publicName && publicQuote;
 
               if (isPublished) {
                 return (
@@ -139,7 +141,7 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
                           Verified Member
                         </span>
                         <span className="text-[11px] text-[#B8780E] font-semibold">
-                          {slot.yearOrCohort || 'Cohort 01'}
+                          {slot.yearOrCohort || slot.cohort || 'Cohort 01'}
                         </span>
                       </div>
 
@@ -147,17 +149,17 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
                         {slot.avatarUrl ? (
                           <img
                             src={slot.avatarUrl}
-                            alt={slot.name}
+                            alt={publicName}
                             className="w-11 h-11 rounded-full object-cover border-2 border-[#E59A1E]/30"
                           />
                         ) : (
                           <div className="w-11 h-11 rounded-full bg-[#0C1B2A] text-[#FAF8F5] font-bold text-sm flex items-center justify-center border border-[#E59A1E]/50">
-                            {slot.name.charAt(0)}
+                            {publicName.charAt(0)}
                           </div>
                         )}
                         <div>
                           <h4 className="text-sm font-bold text-[#0C1B2A] font-display">
-                            {slot.name}
+                            {publicName}
                           </h4>
                           <p className="text-[11px] text-slate-500">
                             {slot.trackOrProgramme || (slot.gender === 'boy' ? 'Boy Candidate' : 'Girl Candidate')}
@@ -168,7 +170,7 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
                       <div className="relative">
                         <Quote className="w-5 h-5 text-amber-300 absolute -top-1 -left-1 opacity-40" />
                         <p className="text-xs text-slate-700 italic leading-relaxed pl-4">
-                          "{slot.quote}"
+                          "{publicQuote}"
                         </p>
                       </div>
                     </div>
@@ -202,7 +204,7 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
                     </h4>
 
                     <p className="text-xs text-slate-500 italic leading-relaxed">
-                      {slot.quote || '[Verified journey and experience write-up will be published upon completion of the 60-session industry track]'}
+                      {publicQuote || '[Verified journey and experience write-up will be published upon completion of the 60-session industry track]'}
                     </p>
                   </div>
 

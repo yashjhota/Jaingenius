@@ -126,10 +126,13 @@ export interface TestimonialSlot {
   gender: 'boy' | 'girl';
   status: 'to_supply' | 'ready';
   studentName?: string;
+  name?: string;
   trackOrProgramme?: string;
   experienceText?: string;
+  quote?: string;
   avatarUrl?: string;
   cohort?: string;
+  yearOrCohort?: string;
   createdAt?: string;
   isDeleted?: boolean;
   deletedAt?: string | null;
