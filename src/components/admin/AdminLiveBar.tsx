@@ -111,7 +111,6 @@ export const AdminLiveBar: React.FC<AdminLiveBarProps> = ({
                   <input
                     type="password"
                     autoFocus
-                    placeholder="Enter PIN (e.g. 2026)"
                     value={pinInput}
                     onChange={(e) => {
                       setPinInput(e.target.value);

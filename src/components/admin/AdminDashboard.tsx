@@ -121,7 +121,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, lang
                     setPinInput(e.target.value);
                     if (pinError) setPinError(false);
                   }}
-                  placeholder="Enter Admin PIN or Password"
+                  placeholder="••••••••"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#081320] border border-white/15 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-[#E59A1E] transition-colors"
                 />
               </div>
