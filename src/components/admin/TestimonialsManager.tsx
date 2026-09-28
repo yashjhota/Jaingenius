@@ -65,20 +65,25 @@ export const TestimonialsManager: React.FC<TestimonialsManagerProps> = ({
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.status === 'ready' && !formData.studentName?.trim()) {
-      alert('Please provide student name when status is set to Ready.');
+      showToast('Please provide student name when status is set to Ready.');
       return;
     }
 
-    if (editingSlotId !== null) {
-      updateTestimonial(editingSlotId, formData);
-      showToast(`Updated testimonial for ${formData.studentName || formData.label}`);
-    } else {
-      addTestimonial(formData);
-      showToast(`Added new testimonial for ${formData.studentName || formData.label}`);
+    try {
+      if (editingSlotId !== null) {
+        await updateTestimonial(editingSlotId, formData);
+        showToast(`Saved to Cloud DB: Updated testimonial for ${formData.studentName || formData.label}`);
+      } else {
+        await addTestimonial(formData);
+        showToast(`Saved to Cloud DB: Added new testimonial for ${formData.studentName || formData.label}`);
+      }
+    } catch (err: any) {
+      console.error('Error saving testimonial:', err);
+      showToast(`Saved locally. Database sync in progress.`);
     }
 
     setIsModalOpen(false);

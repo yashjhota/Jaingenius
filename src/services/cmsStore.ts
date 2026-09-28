@@ -179,6 +179,7 @@ export interface CMSState {
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return fallback;
     const item = localStorage.getItem(key);
     if (!item) return fallback;
     return JSON.parse(item) as T;
@@ -190,10 +191,25 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 
 function saveToStorage<T>(key: string, value: T): void {
   try {
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.error(`Error saving ${key} to storage:`, e);
   }
+}
+
+export function sanitizeForFirestore<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const clean: Record<string, any> = {};
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (value === undefined) continue;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+      clean[key] = sanitizeForFirestore(value);
+    } else {
+      clean[key] = value;
+    }
+  }
+  return clean;
 }
 
 function normalizeTestimonialRecord(raw: Partial<TestimonialSlot>): TestimonialSlot {
@@ -201,7 +217,7 @@ function normalizeTestimonialRecord(raw: Partial<TestimonialSlot>): TestimonialS
   const experienceText = String(raw.experienceText ?? raw.quote ?? '').trim();
   const cohort = String(raw.cohort ?? raw.yearOrCohort ?? 'Cohort 01').trim() || 'Cohort 01';
 
-  return {
+  const record: TestimonialSlot = {
     slotId: Number(raw.slotId ?? 0),
     label: String(raw.label ?? 'Student Graduate').trim() || 'Student Graduate',
     gender: raw.gender === 'girl' ? 'girl' : 'boy',
@@ -217,8 +233,13 @@ function normalizeTestimonialRecord(raw: Partial<TestimonialSlot>): TestimonialS
     createdAt: raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
     isDeleted: !!raw.isDeleted,
     deletedAt: raw.deletedAt ?? null,
-    deletedBy: raw.deletedBy ? String(raw.deletedBy) : undefined,
   };
+
+  if (raw.deletedBy) {
+    record.deletedBy = String(raw.deletedBy);
+  }
+
+  return record;
 }
 
 // Initial state hydrated from local storage / static seed
@@ -284,12 +305,12 @@ async function checkAndBootstrapInitialData() {
     if (!metaSnap.exists()) {
       // First-time database bootstrap only!
       const batch = writeBatch(db);
-      EVENTS_DATA.forEach((ev) => batch.set(doc(db, 'events', ev.id), ev));
-      GALLERY_ITEMS.forEach((it) => batch.set(doc(db, 'gallery', it.id), it));
-      INITIAL_NEWS_ARTICLES.forEach((art) => batch.set(doc(db, 'news', art.id), art));
-      TESTIMONIAL_SLOTS.forEach((t) => batch.set(doc(db, 'testimonials', String(t.slotId)), t));
-      INITIAL_SOCIAL_POSTS.forEach((p) => batch.set(doc(db, 'socialPosts', p.id), p));
-      batch.set(doc(db, 'settings', 'site_settings'), INITIAL_SITE_SETTINGS);
+      EVENTS_DATA.forEach((ev) => batch.set(doc(db, 'events', ev.id), sanitizeForFirestore(ev)));
+      GALLERY_ITEMS.forEach((it) => batch.set(doc(db, 'gallery', it.id), sanitizeForFirestore(it)));
+      INITIAL_NEWS_ARTICLES.forEach((art) => batch.set(doc(db, 'news', art.id), sanitizeForFirestore(art)));
+      TESTIMONIAL_SLOTS.forEach((t) => batch.set(doc(db, 'testimonials', String(t.slotId)), sanitizeForFirestore(t)));
+      INITIAL_SOCIAL_POSTS.forEach((p) => batch.set(doc(db, 'socialPosts', p.id), sanitizeForFirestore(p)));
+      batch.set(doc(db, 'settings', 'site_settings'), sanitizeForFirestore(INITIAL_SITE_SETTINGS));
       batch.set(metaRef, {
         initialized: true,
         seededAt: new Date().toISOString(),
@@ -299,6 +320,18 @@ async function checkAndBootstrapInitialData() {
       saveToStorage(STORAGE_KEYS.INITIALIZED, true);
     } else {
       saveToStorage(STORAGE_KEYS.INITIALIZED, true);
+      // Ensure missing default testimonial slots exist in Firestore
+      try {
+        for (const defaultSlot of TESTIMONIAL_SLOTS) {
+          const slotDocRef = doc(db, 'testimonials', String(defaultSlot.slotId));
+          const snap = await getDoc(slotDocRef);
+          if (!snap.exists()) {
+            await setDoc(slotDocRef, sanitizeForFirestore(defaultSlot));
+          }
+        }
+      } catch (err) {
+        console.warn('Testimonial slot backfill check:', err);
+      }
     }
   } catch (err) {
     console.warn('Initial database metadata check:', err);
@@ -390,16 +423,46 @@ function initFirestoreSync() {
       collection(db, testimonialsPath),
       (snapshot) => {
         const remoteTestimonials: TestimonialSlot[] = [];
-        snapshot.forEach((d) => remoteTestimonials.push(normalizeTestimonialRecord(d.data() as TestimonialSlot)));
+        snapshot.forEach((d) => {
+          const data = d.data() as Partial<TestimonialSlot>;
+          const parsedId = Number(d.id);
+          remoteTestimonials.push(
+            normalizeTestimonialRecord({
+              ...data,
+              slotId: typeof data.slotId === 'number' ? data.slotId : (!isNaN(parsedId) ? parsedId : 0),
+            })
+          );
+        });
         remoteTestimonials.sort((a, b) => a.slotId - b.slotId);
-        state = {
-          ...state,
-          testimonials: remoteTestimonials,
-          firebaseSyncStatus: 'connected',
-          lastSyncedAt: new Date().toISOString(),
-        };
-        saveToStorage(STORAGE_KEYS.TESTIMONIALS, remoteTestimonials);
-        notify();
+
+        if (remoteTestimonials.length > 0) {
+          state = {
+            ...state,
+            testimonials: remoteTestimonials,
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.TESTIMONIALS, remoteTestimonials);
+          notify();
+        } else {
+          // If collection is completely empty in Firestore, populate with default structured slots
+          const initialSlots = TESTIMONIAL_SLOTS.map(normalizeTestimonialRecord);
+          state = {
+            ...state,
+            testimonials: initialSlots,
+            firebaseSyncStatus: 'connected',
+            lastSyncedAt: new Date().toISOString(),
+          };
+          saveToStorage(STORAGE_KEYS.TESTIMONIALS, initialSlots);
+          notify();
+          try {
+            const batch = writeBatch(db);
+            initialSlots.forEach((t) =>
+              batch.set(doc(db, 'testimonials', String(t.slotId)), sanitizeForFirestore(t))
+            );
+            batch.commit().catch(() => {});
+          } catch {}
+        }
       },
       (error) => {
         try {
@@ -739,9 +802,10 @@ export const CMSStore = {
     );
     notify();
 
+    const cleanSlot = sanitizeForFirestore(newSlot);
     const docPath = `testimonials/${newSlot.slotId}`;
     try {
-      await setDoc(doc(db, 'testimonials', String(newSlot.slotId)), newSlot);
+      await setDoc(doc(db, 'testimonials', String(newSlot.slotId)), cleanSlot, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, docPath);
     }
@@ -772,11 +836,15 @@ export const CMSStore = {
     );
     notify();
 
-    const docPath = `testimonials/${slotId}`;
-    try {
-      await updateDoc(doc(db, 'testimonials', String(slotId)), updates);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, docPath);
+    const target = state.testimonials.find((t) => t.slotId === slotId);
+    if (target) {
+      const cleanTarget = sanitizeForFirestore(target);
+      const docPath = `testimonials/${slotId}`;
+      try {
+        await setDoc(doc(db, 'testimonials', String(slotId)), cleanTarget, { merge: true });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, docPath);
+      }
     }
   },
 
@@ -1034,7 +1102,7 @@ export const CMSStore = {
       logActivity('delete', 'testimonials', `Moved testimonial Slot #${numId} to Trash`);
       notify();
       try {
-        await setDoc(doc(db, 'testimonials', strId), { ...target, isDeleted: true, deletedAt }, { merge: true });
+        await setDoc(doc(db, 'testimonials', strId), sanitizeForFirestore({ ...target, isDeleted: true, deletedAt }), { merge: true });
       } catch (e) {
         handleFirestoreError(e, OperationType.UPDATE, `testimonials/${strId}`);
       }

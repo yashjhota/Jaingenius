@@ -106,10 +106,18 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
             <h3 className="text-3xl sm:text-4xl font-extrabold text-[#0C1B2A] font-display">
               Member Voices & First Cohort
             </h3>
-            {/* Specified Tasteful Notice from Prompt Section 19 */}
+            {/* Dynamic Verified Voices Banner */}
             <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 text-xs sm:text-sm font-medium leading-relaxed max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <span className="font-bold">Student Stories Coming Soon</span> — The first batch of 24 Jain Genius members is currently undergoing intensive training. Their verified transformations, testimonials, and placement records will be published here upon cohort graduation.
+                {testimonials.filter((t) => !t.isDeleted && t.status === 'ready' && (t.studentName || t.name) && (t.experienceText || t.quote)).length > 0 ? (
+                  <span>
+                    <span className="font-bold text-amber-950">Verified Member Transformations</span> — Direct reflections and experiences from active Jain Genius Cohort 01 trainees. Additional student stories will be published as members graduate.
+                  </span>
+                ) : (
+                  <span>
+                    <span className="font-bold text-amber-950">Student Stories Coming Soon</span> — The first batch of 24 Jain Genius members is currently undergoing intensive training. Their verified transformations, testimonials, and placement records will be published here upon cohort graduation.
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => onNavigate('admin')}
@@ -121,12 +129,14 @@ export const ImpactView: React.FC<ImpactViewProps> = ({ lang, onNavigate, onOpen
             </div>
           </div>
 
-          {/* Structured Slots for 3 Boys & 2 Girls from Prompt */}
+          {/* Structured Slots for Cohort 01 Testimonials */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {testimonials.map((slot) => {
-              const publicName = slot.studentName || slot.name || 'Student';
-              const publicQuote = slot.experienceText || slot.quote || '';
-              const isPublished = slot.status === 'ready' && publicName && publicQuote;
+            {testimonials
+              .filter((slot) => !slot.isDeleted)
+              .map((slot) => {
+              const publicName = (slot.studentName || slot.name || 'Student').trim();
+              const publicQuote = (slot.experienceText || slot.quote || '').trim();
+              const isPublished = slot.status === 'ready' && !!publicName && !!publicQuote;
 
               if (isPublished) {
                 return (

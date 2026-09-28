@@ -13,6 +13,7 @@ import { PillarsSection } from './components/home/PillarsSection';
 import { TopicsCarousel } from './components/home/TopicsCarousel';
 import { JourneySection } from './components/home/JourneySection';
 import { DacSection } from './components/home/DacSection';
+import { TestimonialsSection } from './components/home/TestimonialsSection';
 import { SocialFeedSection } from './components/home/SocialFeedSection';
 
 // Page Views
@@ -153,6 +154,12 @@ export default function App() {
             />
 
             <DacSection
+              lang={lang}
+              onNavigate={handleNavigate}
+              onOpenRegister={() => handleOpenRegister()}
+            />
+
+            <TestimonialsSection
               lang={lang}
               onNavigate={handleNavigate}
               onOpenRegister={() => handleOpenRegister()}
