@@ -131,7 +131,7 @@ export const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
                     {/* Testimonial Quote */}
                     <div className="relative pt-2">
                       <Quote className="w-6 h-6 text-amber-400/30 absolute -top-1 -left-1" />
-                      <p className="text-xs sm:text-sm text-slate-700 italic leading-relaxed pl-5 line-clamp-6">
+                      <p className="text-sm text-slate-700 italic leading-relaxed pl-5 sm:line-clamp-6">
                         "{publicQuote}"
                       </p>
                     </div>
