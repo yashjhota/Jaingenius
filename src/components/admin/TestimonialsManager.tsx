@@ -30,6 +30,7 @@ export const TestimonialsManager: React.FC<TestimonialsManagerProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlotId, setEditingSlotId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ slotId: number; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const initialForm: Omit<TestimonialSlot, 'slotId'> = {
     label: 'Student Graduate',
@@ -93,11 +94,19 @@ export const TestimonialsManager: React.FC<TestimonialsManagerProps> = ({
     setDeleteTarget({ slotId, name });
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return;
-    deleteTestimonial(deleteTarget.slotId);
-    showToast(`Deleted testimonial slot #${deleteTarget.slotId}`);
-    setDeleteTarget(null);
+    setIsDeleting(true);
+    try {
+      await deleteTestimonial(deleteTarget.slotId);
+      showToast(`Deleted testimonial slot #${deleteTarget.slotId}`);
+      setDeleteTarget(null);
+    } catch (error) {
+      console.error('Error deleting testimonial:', error);
+      showToast('Could not delete testimonial. Please check the database connection and try again.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -399,6 +408,7 @@ export const TestimonialsManager: React.FC<TestimonialsManagerProps> = ({
         confirmVariant="danger"
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+        isProcessing={isDeleting}
       />
     </div>
   );

@@ -320,18 +320,6 @@ async function checkAndBootstrapInitialData() {
       saveToStorage(STORAGE_KEYS.INITIALIZED, true);
     } else {
       saveToStorage(STORAGE_KEYS.INITIALIZED, true);
-      // Ensure missing default testimonial slots exist in Firestore
-      try {
-        for (const defaultSlot of TESTIMONIAL_SLOTS) {
-          const slotDocRef = doc(db, 'testimonials', String(defaultSlot.slotId));
-          const snap = await getDoc(slotDocRef);
-          if (!snap.exists()) {
-            await setDoc(slotDocRef, sanitizeForFirestore(defaultSlot));
-          }
-        }
-      } catch (err) {
-        console.warn('Testimonial slot backfill check:', err);
-      }
     }
   } catch (err) {
     console.warn('Initial database metadata check:', err);
@@ -435,34 +423,14 @@ function initFirestoreSync() {
         });
         remoteTestimonials.sort((a, b) => a.slotId - b.slotId);
 
-        if (remoteTestimonials.length > 0) {
-          state = {
-            ...state,
-            testimonials: remoteTestimonials,
-            firebaseSyncStatus: 'connected',
-            lastSyncedAt: new Date().toISOString(),
-          };
-          saveToStorage(STORAGE_KEYS.TESTIMONIALS, remoteTestimonials);
-          notify();
-        } else {
-          // If collection is completely empty in Firestore, populate with default structured slots
-          const initialSlots = TESTIMONIAL_SLOTS.map(normalizeTestimonialRecord);
-          state = {
-            ...state,
-            testimonials: initialSlots,
-            firebaseSyncStatus: 'connected',
-            lastSyncedAt: new Date().toISOString(),
-          };
-          saveToStorage(STORAGE_KEYS.TESTIMONIALS, initialSlots);
-          notify();
-          try {
-            const batch = writeBatch(db);
-            initialSlots.forEach((t) =>
-              batch.set(doc(db, 'testimonials', String(t.slotId)), sanitizeForFirestore(t))
-            );
-            batch.commit().catch(() => {});
-          } catch {}
-        }
+        state = {
+          ...state,
+          testimonials: remoteTestimonials,
+          firebaseSyncStatus: 'connected',
+          lastSyncedAt: new Date().toISOString(),
+        };
+        saveToStorage(STORAGE_KEYS.TESTIMONIALS, remoteTestimonials);
+        notify();
       },
       (error) => {
         try {
@@ -849,6 +817,13 @@ export const CMSStore = {
   },
 
   async deleteTestimonial(slotId: number): Promise<void> {
+    const docPath = `testimonials/${slotId}`;
+    try {
+      await deleteDoc(doc(db, 'testimonials', String(slotId)));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, docPath);
+    }
+
     state = {
       ...state,
       testimonials: state.testimonials.filter((t) => t.slotId !== slotId),
@@ -856,13 +831,6 @@ export const CMSStore = {
     saveToStorage(STORAGE_KEYS.TESTIMONIALS, state.testimonials);
     logActivity('delete', 'testimonials', `Permanently deleted testimonial Slot #${slotId}`);
     notify();
-
-    const docPath = `testimonials/${slotId}`;
-    try {
-      await deleteDoc(doc(db, 'testimonials', String(slotId)));
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, docPath);
-    }
   },
 
   // --- SITE SETTINGS ---
